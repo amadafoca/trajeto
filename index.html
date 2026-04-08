@@ -28,18 +28,12 @@
 body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--txt); min-height: 100vh; }
 a { color: var(--accent); text-decoration: none; }
 
-.hero { position: relative; min-height: 62vh; display: flex; align-items: flex-end; padding: 24px 16px; background: url('./assets/banner_mobile.png') center center / cover no-repeat; }
-.hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,12,18,0.22) 0%, rgba(10,12,18,0.58) 48%, rgba(10,12,18,0.88) 100%); }
+.hero { position: relative; min-height: 250px; display: flex; align-items: flex-end; padding: 18px 16px 12px; background: url('./assets/banner_mobile.png') center center / cover no-repeat; }
+.hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,12,18,0.18) 0%, rgba(10,12,18,0.44) 46%, rgba(10,12,18,0.82) 100%); }
 .hero-inner { position: relative; z-index: 1; width: 100%; max-width: 1080px; margin: 0 auto; }
-.hero-card { max-width: 560px; background: linear-gradient(180deg, rgba(15,17,23,0.64), rgba(15,17,23,0.78)); border: 1px solid rgba(255,255,255,0.09); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 28px; padding: 28px 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.28); }
-.hero-kicker { display: inline-flex; align-items: center; gap: 8px; color: #d8deee; font-size: 11px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 999px; }
-.hero-title { font-size: clamp(36px, 7vw, 64px); line-height: 0.94; letter-spacing: -0.04em; margin-top: 16px; }
-.hero-subtitle { color: #d3d8e6; font-size: 15px; line-height: 1.6; max-width: 46ch; margin-top: 14px; }
-.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
-.hero-btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: 999px; border: none; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.2s, opacity 0.2s, background 0.2s; }
-.hero-btn:hover { transform: translateY(-1px); }
-.hero-btn-primary { background: #f8fafc; color: #111827; }
-.hero-btn-secondary { background: rgba(255,255,255,0.08); color: #f8fafc; border: 1px solid rgba(255,255,255,0.12); }
+.hero-card { max-width: 430px; background: linear-gradient(180deg, rgba(12,15,22,0.50), rgba(12,15,22,0.70)); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 22px; padding: 18px 18px 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.24); }
+.hero-title { font-size: clamp(30px, 5vw, 48px); line-height: 0.95; letter-spacing: -0.04em; }
+.hero-subtitle { color: #d3d8e6; font-size: 14px; line-height: 1.5; max-width: 34ch; margin-top: 10px; }
 
 .form-wrap { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
 .logo { text-align: center; margin-bottom: 24px; }
@@ -124,15 +118,13 @@ a { color: var(--accent); text-decoration: none; }
 .spinner { width: 36px; height: 36px; border: 3px solid var(--brd); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (min-width: 700px) {
-  .hero { min-height: 68vh; padding: 36px 24px; background-image: url('./assets/banner_desktop.png'); }
-  .hero-card { padding: 34px 32px; }
+  .hero { min-height: 320px; padding: 22px 24px 10px; background-image: url('./assets/banner_desktop.png'); }
 }
 @media (max-width: 520px) {
-  .hero { min-height: 58vh; padding: 16px 14px; }
-  .hero-card { border-radius: 24px; padding: 22px 18px; }
-  .hero-subtitle { font-size: 14px; }
-  .hero-actions { gap: 10px; }
-  .hero-btn { width: 100%; }
+  .hero { min-height: 210px; padding: 14px 14px 8px; }
+  .hero-card { max-width: 320px; border-radius: 18px; padding: 14px 14px 13px; }
+  .hero-title { font-size: clamp(24px, 8vw, 34px); }
+  .hero-subtitle { font-size: 13px; margin-top: 8px; }
 }
 </style>
 </head>
@@ -141,13 +133,8 @@ a { color: var(--accent); text-decoration: none; }
 <section class="hero" aria-label="Apresentacao do produto">
   <div class="hero-inner">
     <div class="hero-card">
-      <div class="hero-kicker">&#127949;&#65039; Produto para motoviagem</div>
       <h1 class="hero-title">Moto Weather Route</h1>
       <p class="hero-subtitle">Previsão de chuva trecho a trecho para sua viagem</p>
-      <div class="hero-actions">
-        <button type="button" class="hero-btn hero-btn-primary" id="hero-scroll-btn">Consultar rota</button>
-        <a class="hero-btn hero-btn-secondary" href="https://amadafoca.github.io/moto-weather-route/" target="_blank" rel="noreferrer">Compartilhar site</a>
-      </div>
     </div>
   </div>
 </section>
@@ -539,9 +526,6 @@ var tmr = new Date();
 tmr.setDate(tmr.getDate() + 1);
 document.getElementById('data').value = tmr.toISOString().split('T')[0];
 var shouldAutorun = fillFormFromUrl();
-document.getElementById('hero-scroll-btn').addEventListener('click', function() {
-  document.getElementById('form-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
 
 document.getElementById('route-form').addEventListener('submit', function(e) {
   e.preventDefault();
