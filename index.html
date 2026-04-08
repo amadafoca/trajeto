@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Moto Weather Route</title>
+<title>trajeto</title>
 <meta name="description" content="Previsão de chuva hora a hora para suas viagens">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -133,7 +133,7 @@ a { color: var(--accent); text-decoration: none; }
 <section class="hero" aria-label="Apresentacao do produto">
   <div class="hero-inner">
     <div class="hero-card">
-      <h1 class="hero-title">Moto Weather Route</h1>
+      <h1 class="hero-title">trajeto</h1>
       <p class="hero-subtitle">Previsão de chuva trecho a trecho para sua viagem</p>
     </div>
   </div>
@@ -141,7 +141,7 @@ a { color: var(--accent); text-decoration: none; }
 
 <div class="form-wrap" id="form-screen">
   <div class="logo">
-    <h1>&#127949;&#65039; Moto Weather Route</h1>
+    <h1>&#127949;&#65039; trajeto</h1>
     <p>Previsão de chuva trecho a trecho para sua viagem</p>
   </div>
   <form id="route-form" autocomplete="off">
@@ -176,7 +176,7 @@ a { color: var(--accent); text-decoration: none; }
     <div class="site-brand-name">Amada Foca</div>
     <p class="site-brand-copy">Projeto publicado por Diogo Moreno. Gere a rota, compartilhe no WhatsApp e volte aqui para novas consultas.</p>
     <div class="site-brand-links">
-      <a class="brand-chip" href="https://amadafoca.github.io/moto-weather-route/" target="_blank" rel="noreferrer">
+      <a class="brand-chip" href="https://amadafoca.github.io/trajeto/" target="_blank" rel="noreferrer">
         <span class="brand-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 21 3"/><path d="M21 3h-7"/><path d="M21 3v7"/><path d="M14 10v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V12a2 2 0 0 1 2-2h8"/></svg>
         </span>
@@ -226,7 +226,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 function geocode(q) {
-  return fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&countrycodes=br&format=json&limit=1', { headers: { 'User-Agent': 'MotoWeather/1.0' } })
+  return fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&countrycodes=br&format=json&limit=1', { headers: { 'User-Agent': 'trajeto/1.0' } })
     .then(function(r) { if (!r.ok) throw new Error('Geocoding falhou'); return r.json(); })
     .then(function(d) { if (!d.length) throw new Error('Local nao encontrado: ' + q); return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon), name: d[0].display_name.split(',')[0] }; });
 }
@@ -246,7 +246,7 @@ function samplePoints(geo, n, oN, dN) {
 }
 
 function reverseGeo(lat, lon) {
-  return fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json&zoom=10', { headers: { 'User-Agent': 'MotoWeather/1.0' } })
+  return fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json&zoom=10', { headers: { 'User-Agent': 'trajeto/1.0' } })
     .then(function(r) { if (!r.ok) return null; return r.json(); })
     .then(function(d) { if (!d || !d.address) return null; return d.address.city || d.address.town || d.address.municipality || d.address.village || null; })
     .catch(function() { return null; });
@@ -295,7 +295,7 @@ function genWhatsApp(dados, oN, dN, date, hora, km) {
     t += horaStr(p.hora) + ' ' + p.nome + ' \u2192 *' + p.mm.toFixed(1) + 'mm* ' + c.tag.toLowerCase() + '\n';
   });
   t += '\n_Dados: Open-Meteo (GFS) \u2022 ' + new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '_';
-  t += '\n_Criado em Moto Weather Route: https://amadafoca.github.io/moto-weather-route/_';
+  t += '\n_Criado em trajeto: https://amadafoca.github.io/trajeto/_';
   return t;
 }
 
@@ -356,7 +356,7 @@ function brandFooterHtml() {
       '<div class="site-brand-name">Amada Foca</div>' +
       '<p class="site-brand-copy">Projeto publicado por Diogo Moreno. Gere a rota, compartilhe no WhatsApp e volte aqui para novas consultas.</p>' +
       '<div class="site-brand-links">' +
-        '<a class="brand-chip" href="https://amadafoca.github.io/moto-weather-route/" target="_blank" rel="noreferrer">' +
+        '<a class="brand-chip" href="https://amadafoca.github.io/trajeto/" target="_blank" rel="noreferrer">' +
           '<span class="brand-icon" aria-hidden="true">' +
             '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 21 3"/><path d="M21 3h-7"/><path d="M21 3v7"/><path d="M14 10v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V12a2 2 0 0 1 2-2h8"/></svg>' +
           '</span>' +

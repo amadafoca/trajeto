@@ -1,4 +1,4 @@
-# 🏍️ Moto Weather Route
+# 🏍️ trajeto
 
 Previsão de chuva trecho a trecho para viagens de moto no Brasil.
 
@@ -17,27 +17,27 @@ Digita origem, destino, data e horário — o app calcula a rota, consulta a pre
 
 ```bash
 # 1. Cria o repo no GitHub (pode ser pelo site ou CLI)
-gh repo create moto-weather --public
+gh repo create trajeto --public
 
 # 2. Na pasta do projeto
-cd moto-weather-route
+cd trajeto
 git init
 git add .
 git commit -m "initial commit"
 git branch -M main
-git remote add origin https://github.com/amadafoca/moto-weather-route.git
+git remote add origin https://github.com/amadafoca/trajeto.git
 git push -u origin main
 
 # 3. Ativa GitHub Pages
 # → Vai em Settings > Pages > Source: Deploy from branch > main > / (root) > Save
 
-# 4. Acessa em: https://amadafoca.github.io/moto-weather-route/
+# 4. Acessa em: https://amadafoca.github.io/trajeto/
 ```
 
 ## Estrutura
 
 ```
-moto-weather-route/
+trajeto/
 ├── index.html          # Página principal
 ├── css/
 │   └── style.css       # Tema escuro
