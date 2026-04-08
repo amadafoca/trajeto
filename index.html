@@ -94,6 +94,8 @@ a { color: var(--accent); text-decoration: none; }
 .footer { text-align: center; padding: 20px 0 24px; font-size: 10px; color: var(--dim2); line-height: 1.6; }
 .btn-sm { background: var(--card2); color: var(--dim); border: 1px solid var(--brd); border-radius: 8px; padding: 8px 18px; font-size: 12px; cursor: pointer; font-family: inherit; margin-top: 8px; }
 .btn-sm:hover { border-color: var(--accent); }
+.share-btn { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 600; margin-top: 8px; margin-left: 8px; }
+.share-btn:hover { opacity: 0.9; }
 .wpp-btn { background: #25d366; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 600; margin-top: 8px; margin-left: 8px; }
 .wpp-btn:hover { opacity: 0.9; }
 
@@ -244,6 +246,56 @@ function genWhatsApp(dados, oN, dN, date, hora, km) {
   return t;
 }
 
+function currentFormState() {
+  return {
+    origem: document.getElementById('origem').value.trim(),
+    destino: document.getElementById('destino').value.trim(),
+    data: document.getElementById('data').value,
+    hora: document.getElementById('hora').value,
+    velocidade: String(parseInt(document.getElementById('velocidade').value, 10) || 90)
+  };
+}
+
+function buildShareUrl(state, autorun) {
+  var url = new URL(window.location.href);
+  url.search = '';
+  url.hash = '';
+  if (state.origem) url.searchParams.set('origem', state.origem);
+  if (state.destino) url.searchParams.set('destino', state.destino);
+  if (state.data) url.searchParams.set('data', state.data);
+  if (state.hora) url.searchParams.set('hora', state.hora);
+  if (state.velocidade) url.searchParams.set('velocidade', state.velocidade);
+  if (autorun) url.searchParams.set('autorun', '1');
+  return url.toString();
+}
+
+function fillFormFromUrl() {
+  var params = new URLSearchParams(window.location.search);
+  var origem = params.get('origem');
+  var destino = params.get('destino');
+  var data = params.get('data');
+  var hora = params.get('hora');
+  var velocidade = parseInt(params.get('velocidade') || '', 10);
+
+  if (origem) document.getElementById('origem').value = origem;
+  if (destino) document.getElementById('destino').value = destino;
+  if (data) document.getElementById('data').value = data;
+  if (hora) document.getElementById('hora').value = hora;
+  if (!isNaN(velocidade)) {
+    document.getElementById('velocidade').value = Math.min(160, Math.max(40, velocidade));
+  }
+
+  return params.get('autorun') === '1';
+}
+
+function copyText(btnId, text, idleLabel, okLabel) {
+  navigator.clipboard.writeText(text).then(function() {
+    var b = document.getElementById(btnId);
+    b.textContent = okLabel;
+    setTimeout(function() { b.textContent = idleLabel; }, 2000);
+  });
+}
+
 function buildResults(dados, routeGeo, oN, dN, date, hora, km) {
   var mx = Math.max.apply(null, dados.map(function(d) { return d.mm; }));
   var mxC = Math.max.apply(null, dados.reduce(function(a, d) { return a.concat(d.ctx.map(function(c) { return c.mm; })); }, [0.1]));
@@ -321,6 +373,7 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km) {
   html += '<div class="footer">Dados ao vivo: Open-Meteo (GFS/ICON) + OpenStreetMap/OSRM<br>';
   html += 'Consultado: ' + new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   html += '<br><button class="btn-sm" onclick="location.reload()">\ud83d\udd04 Atualizar</button>';
+  html += '<button class="share-btn" id="share-btn">\ud83d\udd17 Copiar link</button>';
   html += '<button class="wpp-btn" id="wpp-btn">\ud83d\udcf1 Copiar WhatsApp</button>';
   html += '</div></div>';
 
@@ -328,13 +381,14 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km) {
   el.innerHTML = html;
   el.style.display = 'block';
 
+  history.replaceState(null, '', buildShareUrl(currentFormState(), true));
+
   var wt = genWhatsApp(dados, oN, dN, date, hora, km);
   document.getElementById('wpp-btn').addEventListener('click', function() {
-    navigator.clipboard.writeText(wt).then(function() {
-      var b = document.getElementById('wpp-btn');
-      b.textContent = '\u2705 Copiado!';
-      setTimeout(function() { b.textContent = '\ud83d\udcf1 Copiar WhatsApp'; }, 2000);
-    });
+    copyText('wpp-btn', wt, '\ud83d\udcf1 Copiar WhatsApp', '\u2705 Copiado!');
+  });
+  document.getElementById('share-btn').addEventListener('click', function() {
+    copyText('share-btn', buildShareUrl(currentFormState(), true), '\ud83d\udd17 Copiar link', '\u2705 Link copiado!');
   });
 
   var map = L.map('map');
@@ -376,6 +430,7 @@ function voltarForm() {
   document.getElementById('results-screen').style.display = 'none';
   document.getElementById('results-screen').innerHTML = '';
   document.getElementById('form-screen').style.display = 'block';
+  history.replaceState(null, '', buildShareUrl(currentFormState(), false));
 }
 
 function showLoad(t, s) {
@@ -393,6 +448,7 @@ function showErr(m) {
 var tmr = new Date();
 tmr.setDate(tmr.getDate() + 1);
 document.getElementById('data').value = tmr.toISOString().split('T')[0];
+var shouldAutorun = fillFormFromUrl();
 
 document.getElementById('route-form').addEventListener('submit', function(e) {
   e.preventDefault();
@@ -452,6 +508,13 @@ document.getElementById('route-form').addEventListener('submit', function(e) {
       btn.textContent = 'Consultar previsao';
     });
 });
+
+if (shouldAutorun) {
+  var autoState = currentFormState();
+  if (autoState.origem && autoState.destino && autoState.data && autoState.hora) {
+    document.getElementById('route-form').requestSubmit();
+  }
+}
 </script>
 </body>
 </html>
