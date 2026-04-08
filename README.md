@@ -20,24 +20,24 @@ Digita origem, destino, data e horário — o app calcula a rota, consulta a pre
 gh repo create moto-weather --public
 
 # 2. Na pasta do projeto
-cd moto-weather
+cd moto-weather-route
 git init
 git add .
 git commit -m "initial commit"
 git branch -M main
-git remote add origin https://github.com/SEU_USUARIO/moto-weather.git
+git remote add origin https://github.com/amadafoca/moto-weather-route.git
 git push -u origin main
 
 # 3. Ativa GitHub Pages
 # → Vai em Settings > Pages > Source: Deploy from branch > main > / (root) > Save
 
-# 4. Acessa em: https://SEU_USUARIO.github.io/moto-weather/
+# 4. Acessa em: https://amadafoca.github.io/moto-weather-route/
 ```
 
 ## Estrutura
 
 ```
-moto-weather/
+moto-weather-route/
 ├── index.html          # Página principal
 ├── css/
 │   └── style.css       # Tema escuro
