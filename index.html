@@ -30,8 +30,12 @@ a { color: var(--accent); text-decoration: none; }
 
 .form-wrap { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
 .logo { text-align: center; margin-bottom: 24px; }
+.brand-mark { width: 72px; height: 72px; border-radius: 18px; object-fit: cover; border: 1px solid var(--brd); box-shadow: 0 12px 30px rgba(0,0,0,0.28); margin-bottom: 14px; }
+.brand-kicker { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--blue); margin-bottom: 8px; }
 .logo h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
 .logo p { color: var(--dim); font-size: 13px; margin-top: 6px; }
+.brand-links { margin-top: 12px; font-size: 12px; color: var(--dim); }
+.brand-links a { color: var(--blue); font-weight: 600; }
 .field { margin-bottom: 14px; }
 .field label { display: block; font-size: 12px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
 .field input { width: 100%; background: var(--card); border: 1px solid var(--brd); border-radius: 10px; padding: 12px 14px; color: var(--txt); font-family: inherit; font-size: 15px; outline: none; transition: border-color 0.2s; }
@@ -108,8 +112,13 @@ a { color: var(--accent); text-decoration: none; }
 
 <div class="form-wrap" id="form-screen">
   <div class="logo">
+    <img class="brand-mark" src="https://github.com/amadafoca.png?size=160" alt="Logo Amadafoca">
+    <div class="brand-kicker">Amadafoca</div>
     <h1>&#127949;&#65039; Moto Weather Route</h1>
     <p>Previsão de chuva trecho a trecho para sua viagem</p>
+    <div class="brand-links">
+      <a href="https://www.instagram.com/diogomoreno/" target="_blank" rel="noreferrer">@diogomoreno</a>
+    </div>
   </div>
   <form id="route-form" autocomplete="off">
     <div class="field">
@@ -243,6 +252,7 @@ function genWhatsApp(dados, oN, dN, date, hora, km) {
     t += horaStr(p.hora) + ' ' + p.nome + ' \u2192 *' + p.mm.toFixed(1) + 'mm* ' + c.tag.toLowerCase() + '\n';
   });
   t += '\n_Dados: Open-Meteo (GFS) \u2022 ' + new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '_';
+  t += '\n_Criado em Moto Weather Route: https://amadafoca.github.io/moto-weather-route/_';
   return t;
 }
 
