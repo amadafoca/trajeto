@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>trajeto</title>
+<title>Trajeto</title>
 <meta name="description" content="Previsão de chuva hora a hora para suas viagens">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -133,7 +133,7 @@ a { color: var(--accent); text-decoration: none; }
 <section class="hero" aria-label="Apresentacao do produto">
   <div class="hero-inner">
     <div class="hero-card">
-      <h1 class="hero-title">trajeto</h1>
+      <h1 class="hero-title">Trajeto</h1>
       <p class="hero-subtitle">Previsão de chuva trecho a trecho para sua viagem</p>
     </div>
   </div>
@@ -141,7 +141,7 @@ a { color: var(--accent); text-decoration: none; }
 
 <div class="form-wrap" id="form-screen">
   <div class="logo">
-    <h1>&#127949;&#65039; trajeto</h1>
+    <h1>&#127949;&#65039; Trajeto</h1>
     <p>Previsão de chuva trecho a trecho para sua viagem</p>
   </div>
   <form id="route-form" autocomplete="off">
@@ -295,7 +295,7 @@ function genWhatsApp(dados, oN, dN, date, hora, km) {
     t += horaStr(p.hora) + ' ' + p.nome + ' \u2192 *' + p.mm.toFixed(1) + 'mm* ' + c.tag.toLowerCase() + '\n';
   });
   t += '\n_Dados: Open-Meteo (GFS) \u2022 ' + new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '_';
-  t += '\n_Criado em trajeto: https://amadafoca.github.io/trajeto/_';
+  t += '\n_Criado em Trajeto: https://amadafoca.github.io/trajeto/_';
   return t;
 }
 
