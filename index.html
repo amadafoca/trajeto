@@ -176,11 +176,11 @@ a { color: var(--accent); text-decoration: none; }
     <div class="site-brand-name">Amada Foca</div>
     <p class="site-brand-copy">Projeto publicado por Diogo Moreno. Gere a rota, compartilhe no WhatsApp e volte aqui para novas consultas.</p>
     <div class="site-brand-links">
-      <a class="brand-chip" href="https://amadafoca.github.io/trajeto/" target="_blank" rel="noreferrer">
+      <a class="brand-chip" href="https://trajetoapp.com.br/" target="_blank" rel="noreferrer">
         <span class="brand-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 21 3"/><path d="M21 3h-7"/><path d="M21 3v7"/><path d="M14 10v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V12a2 2 0 0 1 2-2h8"/></svg>
         </span>
-        <span>amadafoca.github.io</span>
+        <span>trajetoapp.com.br</span>
       </a>
       <a class="brand-chip" href="https://www.instagram.com/diogomoreno/" target="_blank" rel="noreferrer">
         <span class="brand-icon" aria-hidden="true">
@@ -295,7 +295,7 @@ function genWhatsApp(dados, oN, dN, date, hora, km) {
     t += horaStr(p.hora) + ' ' + p.nome + ' \u2192 *' + p.mm.toFixed(1) + 'mm* ' + c.tag.toLowerCase() + '\n';
   });
   t += '\n_Dados: Open-Meteo (GFS) \u2022 ' + new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '_';
-  t += '\n_Criado em Trajeto: https://amadafoca.github.io/trajeto/_';
+  t += '\n_Criado em Trajeto: https://trajetoapp.com.br/_';
   return t;
 }
 
@@ -356,7 +356,7 @@ function brandFooterHtml() {
       '<div class="site-brand-name">Amada Foca</div>' +
       '<p class="site-brand-copy">Projeto publicado por Diogo Moreno. Gere a rota, compartilhe no WhatsApp e volte aqui para novas consultas.</p>' +
       '<div class="site-brand-links">' +
-        '<a class="brand-chip" href="https://amadafoca.github.io/trajeto/" target="_blank" rel="noreferrer">' +
+        '<a class="brand-chip" href="https://trajetoapp.com.br/" target="_blank" rel="noreferrer">' +
           '<span class="brand-icon" aria-hidden="true">' +
             '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 21 3"/><path d="M21 3h-7"/><path d="M21 3v7"/><path d="M14 10v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V12a2 2 0 0 1 2-2h8"/></svg>' +
           '</span>' +

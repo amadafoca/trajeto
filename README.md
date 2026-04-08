@@ -13,7 +13,7 @@ Digita origem, destino, data e horário — o app calcula a rota, consulta a pre
 - **Clima:** Open-Meteo API (modelo GFS/ICON)
 - **Custo:** 100% gratuito, sem API keys
 
-## Deploy no GitHub Pages
+## Deploy
 
 ```bash
 # 1. Cria o repo no GitHub (pode ser pelo site ou CLI)
@@ -28,10 +28,14 @@ git branch -M main
 git remote add origin https://github.com/amadafoca/trajeto.git
 git push -u origin main
 
-# 3. Ativa GitHub Pages
-# → Vai em Settings > Pages > Source: Deploy from branch > main > / (root) > Save
+# 3. Se usar GitHub Pages, ativa em:
+# → Settings > Pages > Source: Deploy from branch > main > / (root) > Save
 
-# 4. Acessa em: https://amadafoca.github.io/trajeto/
+# 4. Configura o domínio próprio:
+# → Settings > Pages > Custom domain > trajetoapp.com.br
+# → ou publica o conteúdo estático na raiz do seu host
+
+# 5. Acessa em: https://trajetoapp.com.br/
 ```
 
 ## Estrutura
