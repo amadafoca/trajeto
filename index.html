@@ -10,52 +10,210 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0f1117;
-  --card: #181b24;
-  --card2: #1e222d;
-  --brd: #2a2f3d;
-  --txt: #e4e6ed;
-  --dim: #8b90a0;
-  --dim2: #555;
+  --bg: #09111d;
+  --card: #121d31;
+  --card2: #17243a;
+  --card3: #0d1728;
+  --brd: #24324a;
+  --txt: #eef2ff;
+  --dim: #99a6be;
+  --dim2: #64748b;
   --green: #34d399;
   --yellow: #fbbf24;
   --orange: #f97316;
   --red: #ef4444;
-  --accent: #818cf8;
-  --blue: #60a5fa;
+  --accent: #7388ff;
+  --accent-strong: #5572ff;
+  --accent-soft: rgba(115,136,255,0.18);
+  --accent-2: #66c2ff;
+  --blue: #7cc6ff;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--txt); min-height: 100vh; }
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(102,194,255,0.12), transparent 28%),
+    linear-gradient(180deg, #0c1524 0%, #09111d 46%, #08101a 100%);
+  color: var(--txt);
+  min-height: 100vh;
+}
 a { color: var(--accent); text-decoration: none; }
 
-.hero { position: relative; min-height: 250px; display: flex; align-items: flex-end; padding: 18px 16px 12px; background: url('./assets/banner_mobile.png') center center / cover no-repeat; }
-.hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,12,18,0.18) 0%, rgba(10,12,18,0.44) 46%, rgba(10,12,18,0.82) 100%); }
-.hero-inner { position: relative; z-index: 1; width: 100%; max-width: 1080px; margin: 0 auto; }
-.hero-card { max-width: 430px; background: linear-gradient(180deg, rgba(12,15,22,0.50), rgba(12,15,22,0.70)); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 22px; padding: 18px 18px 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.24); }
-.hero-title { font-size: clamp(30px, 5vw, 48px); line-height: 0.95; letter-spacing: -0.04em; }
-.hero-subtitle { color: #d3d8e6; font-size: 14px; line-height: 1.5; max-width: 34ch; margin-top: 10px; }
+/* Brand-first mobile hierarchy: lock the symbol, wordmark and promise before the route form. */
+.top-shell { max-width: 580px; margin: 0 auto; padding: 18px 16px 0; }
+.brand-header { padding: 6px 2px 0; }
+.brand-lockup { display: flex; align-items: center; gap: 14px; }
+.brand-symbol {
+  width: 56px;
+  height: 56px;
+  border-radius: 19px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(115,136,255,0.18), rgba(102,194,255,0.10));
+  border: 1px solid rgba(145,160,255,0.20);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 18px 40px rgba(3,7,16,0.45);
+}
+.brand-symbol svg { width: 34px; height: 34px; display: block; }
+.brand-copy { min-width: 0; }
+.brand-name {
+  font-size: clamp(34px, 8.5vw, 46px);
+  line-height: 0.92;
+  letter-spacing: -0.065em;
+  font-weight: 700;
+  color: #f5f7ff;
+}
+.brand-tagline {
+  color: var(--dim);
+  font-size: 13px;
+  line-height: 1.45;
+  margin-top: 6px;
+  letter-spacing: 0.01em;
+}
 
-.form-wrap { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-.logo { text-align: center; margin-bottom: 24px; }
-.logo h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-.logo p { color: var(--dim); font-size: 13px; margin-top: 6px; }
+.hero {
+  position: relative;
+  min-height: 152px;
+  margin-top: 18px;
+  padding: 18px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: 28px;
+  background: url('./assets/banner_mobile.png') center center / cover no-repeat;
+  border: 1px solid rgba(145,160,255,0.14);
+  box-shadow: 0 26px 64px rgba(0,0,0,0.34);
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(5,9,17,0.16) 0%, rgba(8,13,22,0.50) 45%, rgba(8,13,22,0.88) 100%),
+    linear-gradient(115deg, rgba(115,136,255,0.18) 0%, rgba(9,17,29,0.0) 38%, rgba(102,194,255,0.18) 100%);
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  width: 230px;
+  height: 230px;
+  right: -78px;
+  bottom: -136px;
+  background: radial-gradient(circle, rgba(115,136,255,0.34) 0%, rgba(115,136,255,0.0) 72%);
+  filter: blur(8px);
+}
+.hero-inner { position: relative; z-index: 1; width: 100%; }
+.hero-strip { display: flex; gap: 8px; flex-wrap: wrap; }
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(10,16,28,0.54);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #d8def2;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.hero-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 16px rgba(102,194,255,0.6);
+}
+
+.form-wrap { max-width: 580px; margin: 0 auto; padding: 18px 16px 30px; }
+/* Functional copy bridges the brand promise into the route-planning action. */
+.intro-block { padding: 2px 2px 22px; }
+.intro-title {
+  font-size: clamp(31px, 8vw, 44px);
+  line-height: 1.03;
+  letter-spacing: -0.055em;
+  font-weight: 700;
+  max-width: 11ch;
+  color: #f5f7ff;
+}
+.intro-subtitle {
+  color: var(--dim);
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 36ch;
+  margin-top: 12px;
+}
+
+.form-panel {
+  background: linear-gradient(180deg, rgba(18,29,49,0.88), rgba(13,23,40,0.96));
+  border: 1px solid rgba(129,140,248,0.12);
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: 0 28px 72px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.04);
+}
 .field { margin-bottom: 14px; }
-.field label { display: block; font-size: 12px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.field label { display: block; font-size: 11px; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 6px; }
 .field-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
 .field-head label { margin-bottom: 0; }
-.field input { width: 100%; background: var(--card); border: 1px solid var(--brd); border-radius: 10px; padding: 12px 14px; color: var(--txt); font-family: inherit; font-size: 15px; outline: none; transition: border-color 0.2s; }
-.field input:focus { border-color: var(--accent); }
+.field input {
+  width: 100%;
+  background: rgba(9,17,29,0.82);
+  border: 1px solid var(--brd);
+  border-radius: 14px;
+  padding: 13px 14px;
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  background: rgba(10,18,30,0.96);
+}
 .field input::placeholder { color: var(--dim2); }
-.locate-btn { background: transparent; border: 1px solid var(--brd); border-radius: 999px; color: var(--dim); font-family: inherit; font-size: 11px; font-weight: 600; padding: 6px 10px; cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s; white-space: nowrap; }
+.locate-btn {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(129,140,248,0.18);
+  border-radius: 999px;
+  color: #cbd4ea;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 7px 11px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
 .locate-btn:hover { border-color: var(--accent); color: var(--txt); background: rgba(129,140,248,0.08); }
 .locate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .row { display: flex; gap: 12px; }
 .row .field { flex: 1; }
-.btn-main { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 8px; transition: opacity 0.2s; }
-.btn-main:hover { opacity: 0.9; }
+.btn-main {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 8px;
+  box-shadow: 0 18px 38px rgba(85,114,255,0.34);
+  transition: transform 0.2s, opacity 0.2s, box-shadow 0.2s;
+}
+.btn-main:hover { opacity: 0.96; transform: translateY(-1px); box-shadow: 0 22px 42px rgba(85,114,255,0.42); }
 .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
-.error-msg { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: var(--red); border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 12px; display: none; }
-.speed-note { font-size: 11px; color: var(--dim2); margin-top: 10px; text-align: center; line-height: 1.6; }
+.error-msg { background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.24); color: #fda4af; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-top: 12px; display: none; }
+.speed-note { font-size: 11px; color: var(--dim); margin-top: 12px; text-align: left; line-height: 1.7; }
 
 .results { display: none; }
 .header { text-align: center; padding: 20px 16px 12px; }
@@ -123,62 +281,99 @@ a { color: var(--accent); text-decoration: none; }
 .spinner { width: 36px; height: 36px; border: 3px solid var(--brd); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (min-width: 700px) {
-  .hero { min-height: 320px; padding: 22px 24px 10px; background-image: url('./assets/banner_desktop.png'); }
+  .top-shell, .form-wrap { max-width: 860px; }
+  .hero { min-height: 214px; padding: 22px 24px; background-image: url('./assets/banner_desktop.png'); }
+  .intro-title { max-width: 13ch; }
+  .form-panel { padding: 22px; }
 }
 @media (max-width: 520px) {
-  .hero { min-height: 210px; padding: 14px 14px 8px; }
-  .hero-card { max-width: 320px; border-radius: 18px; padding: 14px 14px 13px; }
-  .hero-title { font-size: clamp(24px, 8vw, 34px); }
-  .hero-subtitle { font-size: 13px; margin-top: 8px; }
+  .top-shell { padding: 16px 14px 0; }
+  .brand-lockup { align-items: flex-start; gap: 12px; }
+  .brand-symbol { width: 52px; height: 52px; border-radius: 17px; }
+  .brand-tagline { max-width: 18ch; }
+  .hero { min-height: 142px; margin-top: 16px; padding: 14px; border-radius: 24px; }
+  .hero-pill { font-size: 10px; padding: 8px 11px; }
+  .form-wrap { padding: 18px 14px 28px; }
+  .intro-title { font-size: clamp(29px, 8.5vw, 36px); }
+  .form-panel { padding: 16px; border-radius: 22px; }
 }
 </style>
 </head>
 <body>
 
-<section class="hero" aria-label="Apresentacao do produto">
-  <div class="hero-inner">
-    <div class="hero-card">
-      <h1 class="hero-title">Trajeto</h1>
-      <p class="hero-subtitle">Previsão de chuva trecho a trecho para sua viagem</p>
+<div class="top-shell">
+  <!-- Brand-first header: a simple route-inspired symbol, strong wordmark and compact promise. -->
+  <header class="brand-header" aria-label="Marca Trajeto">
+    <div class="brand-lockup">
+      <div class="brand-symbol" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="trajeto-mark-gradient" x1="14" y1="14" x2="49" y2="52" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#8C96FF"/>
+              <stop offset="1" stop-color="#66C2FF"/>
+            </linearGradient>
+          </defs>
+          <path d="M16 16H48" stroke="url(#trajeto-mark-gradient)" stroke-width="6" stroke-linecap="round"/>
+          <path d="M32 16V28C32 39 26 48 16 52" stroke="url(#trajeto-mark-gradient)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="16" cy="52" r="4" fill="url(#trajeto-mark-gradient)"/>
+        </svg>
+      </div>
+      <div class="brand-copy">
+        <div class="brand-name">Trajeto</div>
+        <p class="brand-tagline">O clima do seu caminho</p>
+      </div>
     </div>
-  </div>
-</section>
+  </header>
+
+  <section class="hero" aria-label="Atmosfera da rota">
+    <div class="hero-inner">
+      <div class="hero-strip">
+        <div class="hero-pill"><span class="hero-dot"></span>Trecho a trecho</div>
+        <div class="hero-pill">Saída mais consciente</div>
+      </div>
+    </div>
+  </section>
+</div>
 
 <div class="form-wrap" id="form-screen">
-  <div class="logo">
-    <h1>&#127949;&#65039; Trajeto</h1>
-    <p>Previsão de chuva trecho a trecho para sua viagem</p>
+  <!-- Functional copy comes after the brand so the value proposition leads directly into the form. -->
+  <section class="intro-block" aria-label="Resumo do produto">
+    <h1 class="intro-title">Veja o clima do seu trajeto antes de sair</h1>
+    <p class="intro-subtitle">Informe origem, destino, horário e velocidade média para visualizar a previsão de chuva ao longo da rota.</p>
+  </section>
+
+  <div class="form-panel">
+    <form id="route-form" autocomplete="off">
+      <div class="field">
+        <div class="field-head">
+          <label for="origem">Origem</label>
+          <button type="button" class="locate-btn" id="locate-btn">Usar minha localização</button>
+        </div>
+        <input type="text" id="origem" placeholder="Ex: Rio de Janeiro" required>
+      </div>
+      <div class="field">
+        <label>Destino</label>
+        <input type="text" id="destino" placeholder="Ex: Sao Paulo" required>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Data</label>
+          <input type="date" id="data" required>
+        </div>
+        <div class="field">
+          <label>Hora de saida</label>
+          <input type="time" id="hora" value="08:00" required>
+        </div>
+      </div>
+      <div class="field">
+        <label>Velocidade media (km/h)</label>
+        <input type="number" id="velocidade" value="90" min="40" max="160" step="10">
+      </div>
+      <button type="submit" class="btn-main" id="submit-btn">Consultar previsão</button>
+      <div class="error-msg" id="error-msg"></div>
+      <p class="speed-note">Dados: Open-Meteo &middot; Rota: OSRM/OpenStreetMap &middot; Gratuito, sem cadastro</p>
+    </form>
   </div>
-  <form id="route-form" autocomplete="off">
-    <div class="field">
-      <div class="field-head">
-        <label for="origem">Origem</label>
-        <button type="button" class="locate-btn" id="locate-btn">Usar minha localização</button>
-      </div>
-      <input type="text" id="origem" placeholder="Ex: Rio de Janeiro" required>
-    </div>
-    <div class="field">
-      <label>Destino</label>
-      <input type="text" id="destino" placeholder="Ex: Sao Paulo" required>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>Data</label>
-        <input type="date" id="data" required>
-      </div>
-      <div class="field">
-        <label>Hora de saida</label>
-        <input type="time" id="hora" value="08:00" required>
-      </div>
-    </div>
-    <div class="field">
-      <label>Velocidade media (km/h)</label>
-      <input type="number" id="velocidade" value="90" min="40" max="160" step="10">
-    </div>
-    <button type="submit" class="btn-main" id="submit-btn">Consultar previsão</button>
-    <div class="error-msg" id="error-msg"></div>
-    <p class="speed-note">Dados: Open-Meteo &middot; Rota: OSRM/OpenStreetMap &middot; Gratuito, sem cadastro</p>
-  </form>
   <div class="site-brand">
     <img class="site-brand-mark" src="https://github.com/amadafoca.png?size=160" alt="Logo Amada Foca">
     <div class="site-brand-name">Amada Foca</div>
