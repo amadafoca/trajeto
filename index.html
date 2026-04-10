@@ -865,8 +865,10 @@ if (shouldAutorun) {
 </script>
 
 <script>
-/* Autocomplete de cidades via Nominatim (OSM) */
+/* Autocomplete de cidades via Photon (komoot) */
 (function () {
+  var STATE_SIGLA = {"Acre":"AC","Alagoas":"AL","Amapá":"AP","Amazonas":"AM","Bahia":"BA","Ceará":"CE","Distrito Federal":"DF","Espírito Santo":"ES","Goiás":"GO","Maranhão":"MA","Mato Grosso":"MT","Mato Grosso do Sul":"MS","Minas Gerais":"MG","Pará":"PA","Paraíba":"PB","Paraná":"PR","Pernambuco":"PE","Piauí":"PI","Rio de Janeiro":"RJ","Rio Grande do Norte":"RN","Rio Grande do Sul":"RS","Rondônia":"RO","Roraima":"RR","Santa Catarina":"SC","São Paulo":"SP","Sergipe":"SE","Tocantins":"TO"};
+
   function setupAC(inputEl) {
     var list = inputEl.parentElement.querySelector('.ac-list');
     var timer = null;
@@ -909,22 +911,23 @@ if (shouldAutorun) {
 
     function fetchSuggestions(q) {
       fetch(
-        'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=5&addressdetails=1&featuretype=city&viewbox=-74,-34,-35,6&bounded=0&countrycodes=br',
-        { headers: { 'User-Agent': 'TrajetoApp/1.0', 'Accept-Language': 'pt-BR' } }
+        'https://photon.komoot.io/api/?q=' + encodeURIComponent(q) + '&lang=pt&limit=5&layer=city&lat=-22.9&lon=-43.2'
       )
         .then(function (r) { return r.json(); })
         .then(function (data) {
           var seen = {};
           var items = [];
-          data.forEach(function (d) {
-            var addr = d.address || {};
-            var city = addr.city || addr.town || addr.village || addr.municipality || d.display_name.split(',')[0].trim();
-            var iso = addr['ISO3166-2-lvl4'] || '';
-            var state = iso.indexOf('-') !== -1 ? iso.split('-').pop() : iso;
-            var key = city + '|' + state;
+          (data.features || []).forEach(function (f) {
+            var p = f.properties || {};
+            var city = p.name || '';
+            if (!city) return;
+            var stateName = p.state || '';
+            var isBrazil = (p.country_code || '').toUpperCase() === 'BR';
+            var stateSub = isBrazil ? (STATE_SIGLA[stateName] || stateName) : stateName;
+            var key = city + '|' + stateSub;
             if (seen[key]) return;
             seen[key] = true;
-            items.push({ main: city, sub: state, display: city + (state ? ', ' + state : '') });
+            items.push({ main: city, sub: stateSub, display: city + (stateSub ? ', ' + stateSub : '') });
           });
           renderResults(items.slice(0, 5));
         })
