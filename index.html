@@ -405,7 +405,7 @@ a { color: var(--accent); text-decoration: none; }
       </a>
     </div>
   </div>
-  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 3c179cc</span>
+  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 3eea80c</span>
 </div>
 
 <div class="loading-overlay" id="loading" style="display:none">
@@ -520,7 +520,7 @@ function estimateTimes(pts, geo, depH, spd) {
 function getWeather(pts, date) {
   var lats = pts.map(function(p) { return p.lat.toFixed(3); }).join(',');
   var lons = pts.map(function(p) { return p.lon.toFixed(3); }).join(',');
-  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lats + '&longitude=' + lons + '&hourly=precipitation,precipitation_probability&timezone=America/Sao_Paulo&start_date=' + date + '&end_date=' + date;
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lats + '&longitude=' + lons + '&hourly=precipitation,precipitation_probability,temperature_2m&timezone=America/Sao_Paulo&start_date=' + date + '&end_date=' + date;
   return fetch(url)
     .then(function(r) { if (!r.ok) throw new Error('Open-Meteo falhou'); return r.json(); })
     .then(function(j) {
@@ -528,12 +528,13 @@ function getWeather(pts, date) {
       return pts.map(function(p, i) {
         var pr = locs[i].hourly.precipitation;
         var pb = locs[i].hourly.precipitation_probability || [];
+        var pt = locs[i].hourly.temperature_2m || [];
         var hi = Math.min(23, Math.max(0, Math.round(p.hora)));
         var s = Math.max(0, Math.round(pts[0].hora));
         var e = Math.min(23, Math.round(pts[pts.length-1].hora) + 1);
         var ctx = [];
         for (var k = s; k <= e; k++) ctx.push({ h: k, mm: pr[k] || 0 });
-        return Object.assign({}, p, { mm: pr[hi] || 0, prob: pb[hi] || 0, ctx: ctx, ctxS: s });
+        return Object.assign({}, p, { mm: pr[hi] || 0, prob: pb[hi] || 0, temp: pt[hi] != null ? pt[hi] : null, ctx: ctx, ctxS: s });
       });
     });
 }
@@ -640,7 +641,7 @@ function brandFooterHtml() {
         '</a>' +
       '</div>' +
     '</div>' +
-    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 3c179cc</span>';
+    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 3eea80c</span>';
 }
 
 function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoord, dCoord) {
@@ -696,7 +697,8 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
     html += '<div class="stop">';
     html += '<div class="dot" style="border-color:' + c.cor + ';background:' + c.cor + '22" onclick="panTo(' + idx + ')"></div>';
     html += '<div class="scard" onclick="panTo(' + idx + ')">';
-    html += '<div class="s-head"><span class="s-name">' + p.nome + '</span><span class="chip">' + horaStr(p.hora) + '</span></div>';
+    var tempStr = p.temp != null ? '<span style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.9);line-height:1">' + Math.round(p.temp) + '\u00b0</span>' : '';
+    html += '<div class="s-head"><span class="s-name">' + p.nome + '</span><div style="display:flex;align-items:center;gap:7px">' + tempStr + '<span class="chip">' + horaStr(p.hora) + '</span></div></div>';
     html += '<div class="s-data">';
     html += '<div><div class="mv" style="color:' + c.cor + '">' + p.mm.toFixed(1) + 'mm</div><div class="ml">precipitacao</div></div>';
     html += '<div><div class="mv" style="color:#8b90a0">' + p.prob + '%</div><div class="ml">probabilidade</div></div>';
