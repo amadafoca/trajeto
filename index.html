@@ -405,7 +405,7 @@ a { color: var(--accent); text-decoration: none; }
       </a>
     </div>
   </div>
-  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 3b797e9</span>
+  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 3c179cc</span>
 </div>
 
 <div class="loading-overlay" id="loading" style="display:none">
@@ -640,10 +640,10 @@ function brandFooterHtml() {
         '</a>' +
       '</div>' +
     '</div>' +
-    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 3b797e9</span>';
+    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 3c179cc</span>';
 }
 
-function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine) {
+function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoord, dCoord) {
   var mx = Math.max.apply(null, dados.map(function(d) { return d.mm; }));
   var mxC = Math.max.apply(null, dados.reduce(function(a, d) { return a.concat(d.ctx.map(function(c) { return c.mm; })); }, [0.1]));
   var secos = dados.filter(function(d) { return d.mm < 0.1; }).length;
@@ -686,7 +686,7 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine) {
   html += '<div style="font-size:26px;flex-shrink:0">' + v.i + '</div>';
   html += '<div><div style="font-weight:600;font-size:14px;color:' + v.c + '">' + v.t + '</div>';
   html += '<div style="color:#8b90a0;font-size:12px;margin-top:3px">Max ' + mx.toFixed(1) + 'mm \u00b7 ' + secos + '/' + dados.length + ' pontos secos</div></div></div>';
-  html += '<a class="gmaps-link" href="https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(oN) + '&destination=' + encodeURIComponent(dN) + '&travelmode=two-wheeler" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Ver rota no Google Maps</a>';
+  html += '<a class="gmaps-link" href="https://www.google.com/maps/dir/?api=1&origin=' + oCoord.lat + ',' + oCoord.lon + '&destination=' + dCoord.lat + ',' + dCoord.lon + '&travelmode=two-wheeler" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Ver rota no Google Maps</a>';
   html += '<div class="sec-title">Previsão por trecho</div>';
   html += '<div class="timeline"><div class="tl-line"></div>';
 
@@ -931,7 +931,7 @@ document.getElementById('route-form').addEventListener('submit', function(e) {
         }).then(function(dados) {
           hideLoad();
           document.getElementById('form-screen').style.display = 'none';
-          buildResults(dados, route.geometry, orig.name, dest.name, dt, hr, route.dist, route.routeEngine);
+          buildResults(dados, route.geometry, orig.name, dest.name, dt, hr, route.dist, route.routeEngine, orig, dest);
         });
       });
     })
