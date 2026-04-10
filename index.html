@@ -444,7 +444,7 @@ function geocode(q) {
 }
 
 async function fetchRoute(origin, destination) {
-  var ghUrl = 'https://graphhopper.com/api/1/route?point=' + origin.lat + ',' + origin.lng + '&point=' + destination.lat + ',' + destination.lng + '&profile=motorcycle&locale=pt_BR&points_encoded=false&key=3b6f83cd-cc7e-4003-b433-fa5425570bc2';
+  var ghUrl = 'https://graphhopper.com/api/1/route?point=' + origin.lat + ',' + origin.lng + '&point=' + destination.lat + ',' + destination.lng + '&profile=car&locale=pt_BR&points_encoded=false&key=3b6f83cd-cc7e-4003-b433-fa5425570bc2';
   var osrmUrl = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' + origin.lng + ',' + origin.lat + ';' + destination.lng + ',' + destination.lat + '?overview=full&geometries=geojson';
   function raceTimeout(promise, ms) {
     return Promise.race([promise, new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Timeout')); }, ms); })]);
