@@ -6,11 +6,26 @@
 
 - **Repo:** `amadafoca/trajeto`
 - **Remote principal:** `origin` = `https://github.com/amadafoca/trajeto.git`
-- **Branch principal:** `main`
+- **Branch principal:** `main` (branch de desenvolvimento)
+- **Branch de publicação:** `gh-pages` (gerado automaticamente pelo workflow de deploy)
 - **Domínio público:** `https://trajetoapp.com.br/`
 - **CNAME esperado:** `trajetoapp.com.br`
-- **Stack:** site estático, sem build, sem framework, publicado diretamente a partir do conteúdo do repo
+- **Stack:** site estático, sem build, sem framework
 - **Arquivo principal:** `index.html`
+
+### Deploy
+
+O deploy é feito automaticamente via GitHub Actions (`.github/workflows/deploy.yml`):
+
+1. A cada push no branch `main`, o workflow é disparado.
+2. O workflow substitui o placeholder `<!--BUILD-->` no `index.html` pelo SHA curto do commit (ex: `build a1b2c3d`).
+3. O resultado é publicado no branch `gh-pages` via `peaceiris/actions-gh-pages`.
+4. O GitHub Pages serve o site a partir do branch `gh-pages` (root).
+
+**Regras importantes:**
+- O `index.html` contém o placeholder `<!--BUILD-->` no rodapé. Ele **não deve ser substituído manualmente** — a substituição é feita exclusivamente pelo workflow de deploy.
+- Não faça push diretamente no branch `gh-pages`. Ele é gerenciado pelo GitHub Actions.
+- O branch `main` é o branch de desenvolvimento principal. Todas as alterações devem ser feitas nele.
 
 ---
 
@@ -250,4 +265,4 @@ These rules apply to any coding agent or LLM operating on this repo.
 
 ## Fast summary
 
-Trajeto is a Brazilian digital product initially focused on motorcyclists. It helps users understand the weather along a route before departure. The official brand is Trajeto, the default tagline is "O clima do seu caminho," and the brand should feel like a modern, premium, practical digital product — not a biker club or a generic weather tool. The app is a static site deployed from `main` at `trajetoapp.com.br`.
+Trajeto is a Brazilian digital product initially focused on motorcyclists. It helps users understand the weather along a route before departure. The official brand is Trajeto, the default tagline is "O clima do seu caminho," and the brand should feel like a modern, premium, practical digital product — not a biker club or a generic weather tool. The app is a static site deployed via GitHub Actions to the branch `gh-pages` at `trajetoapp.com.br`.
