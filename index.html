@@ -256,6 +256,9 @@ a { color: var(--accent); text-decoration: none; }
 .brand-chip { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--brd); background: rgba(255,255,255,0.03); color: var(--txt); font-size: 12px; font-weight: 600; }
 .brand-chip:hover { border-color: var(--accent); background: rgba(129,140,248,0.08); }
 .brand-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--blue); flex-shrink: 0; }
+.gmaps-link { display: inline-flex; align-items: center; gap: 7px; color: var(--accent); font-size: 12px; font-weight: 500; border: 1px solid var(--brd); border-radius: 8px; padding: 7px 14px; background: transparent; transition: border-color 0.2s, background 0.2s; text-decoration: none; margin-bottom: 18px; }
+.gmaps-link:hover { border-color: var(--accent); background: var(--accent-soft); }
+.gmaps-link svg { width: 14px; height: 14px; flex-shrink: 0; }
 .btn-sm { background: var(--card2); color: var(--dim); border: 1px solid var(--brd); border-radius: 8px; padding: 8px 18px; font-size: 12px; cursor: pointer; font-family: inherit; margin-top: 8px; }
 .btn-sm:hover { border-color: var(--accent); }
 .share-btn { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 600; margin-top: 8px; margin-left: 8px; }
@@ -683,6 +686,7 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine) {
   html += '<div style="font-size:26px;flex-shrink:0">' + v.i + '</div>';
   html += '<div><div style="font-weight:600;font-size:14px;color:' + v.c + '">' + v.t + '</div>';
   html += '<div style="color:#8b90a0;font-size:12px;margin-top:3px">Max ' + mx.toFixed(1) + 'mm \u00b7 ' + secos + '/' + dados.length + ' pontos secos</div></div></div>';
+  html += '<a class="gmaps-link" href="https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(oN) + '&destination=' + encodeURIComponent(dN) + '&travelmode=two-wheeler" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Ver rota no Google Maps</a>';
   html += '<div class="sec-title">Previsão por trecho</div>';
   html += '<div class="timeline"><div class="tl-line"></div>';
 
