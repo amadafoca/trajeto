@@ -443,10 +443,38 @@ function geocode(q) {
     .then(function(d) { if (!d.length) throw new Error('Local nao encontrado: ' + q); return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon), name: d[0].display_name.split(',')[0] }; });
 }
 
+async function fetchRoute(origin, destination) {
+  var ghUrl = 'https://graphhopper.com/api/1/route?point=' + origin.lat + ',' + origin.lng + '&point=' + destination.lat + ',' + destination.lng + '&vehicle=motorcycle&locale=pt_BR&points_encoded=false&key=3b6f83cd-cc7e-4003-b433-fa5425570bc2';
+  var osrmUrl = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' + origin.lng + ',' + origin.lat + ';' + destination.lng + ',' + destination.lat + '?overview=full&geometries=geojson';
+  function raceTimeout(promise, ms) {
+    return Promise.race([promise, new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Timeout')); }, ms); })]);
+  }
+  try {
+    var ghRes = await raceTimeout(fetch(ghUrl), 8000);
+    if (!ghRes.ok) throw new Error('GraphHopper HTTP ' + ghRes.status);
+    var ghData = await ghRes.json();
+    if (!ghData.paths || !ghData.paths.length) throw new Error('Sem rota GraphHopper');
+    return ghData.paths[0].points;
+  } catch (_) {
+    try {
+      var osrmRes = await fetch(osrmUrl);
+      if (!osrmRes.ok) throw new Error('OSRM HTTP ' + osrmRes.status);
+      var osrmData = await osrmRes.json();
+      if (!osrmData.routes || !osrmData.routes.length) throw new Error('Sem rota OSRM');
+      return osrmData.routes[0].geometry;
+    } catch (_) {
+      throw new Error('Não foi possível calcular a rota. Tente novamente em instantes.');
+    }
+  }
+}
+
 function getRoute(o, d) {
-  return fetch('https://router.project-osrm.org/route/v1/driving/' + o.lon + ',' + o.lat + ';' + d.lon + ',' + d.lat + '?overview=full&geometries=geojson')
-    .then(function(r) { if (!r.ok) throw new Error('Rota nao encontrada'); return r.json(); })
-    .then(function(j) { if (!j.routes || !j.routes.length) throw new Error('Sem rota'); return { geometry: j.routes[0].geometry, dist: j.routes[0].distance / 1000 }; });
+  return fetchRoute({ lat: o.lat, lng: o.lon }, { lat: d.lat, lng: d.lon })
+    .then(function(geometry) {
+      var c = geometry.coordinates, dist = 0;
+      for (var i = 1; i < c.length; i++) { dist += haversine(c[i-1][1], c[i-1][0], c[i][1], c[i][0]); }
+      return { geometry: geometry, dist: dist };
+    });
 }
 
 function samplePoints(geo, n, oN, dN) {
