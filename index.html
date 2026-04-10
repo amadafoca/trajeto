@@ -444,26 +444,29 @@ function geocode(q) {
 }
 
 async function fetchRoute(origin, destination) {
-  var ghUrl = 'https://graphhopper.com/api/1/route?point=' + origin.lat + ',' + origin.lng + '&point=' + destination.lat + ',' + destination.lng + '&vehicle=motorcycle&locale=pt_BR&points_encoded=false&key=3b6f83cd-cc7e-4003-b433-fa5425570bc2';
+  var ghUrl = 'https://graphhopper.com/api/1/route?point=' + origin.lat + ',' + origin.lng + '&point=' + destination.lat + ',' + destination.lng + '&profile=motorcycle&locale=pt_BR&points_encoded=false&key=3b6f83cd-cc7e-4003-b433-fa5425570bc2';
   var osrmUrl = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' + origin.lng + ',' + origin.lat + ';' + destination.lng + ',' + destination.lat + '?overview=full&geometries=geojson';
   function raceTimeout(promise, ms) {
     return Promise.race([promise, new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Timeout')); }, ms); })]);
   }
+  var ghErr, osrmErr;
   try {
     var ghRes = await raceTimeout(fetch(ghUrl), 8000);
-    if (!ghRes.ok) throw new Error('GraphHopper HTTP ' + ghRes.status);
+    if (!ghRes.ok) { var ghBody = await ghRes.text().catch(function() { return ''; }); throw new Error('HTTP ' + ghRes.status + (ghBody.indexOf('message') > -1 ? ' — ' + (JSON.parse(ghBody).message || '').slice(0, 80) : '')); }
     var ghData = await ghRes.json();
-    if (!ghData.paths || !ghData.paths.length) throw new Error('Sem rota GraphHopper');
+    if (!ghData.paths || !ghData.paths.length) throw new Error('Sem rota');
     return ghData.paths[0].points;
-  } catch (_) {
+  } catch (e) {
+    ghErr = e.message || 'erro desconhecido';
     try {
       var osrmRes = await fetch(osrmUrl);
-      if (!osrmRes.ok) throw new Error('OSRM HTTP ' + osrmRes.status);
+      if (!osrmRes.ok) throw new Error('HTTP ' + osrmRes.status);
       var osrmData = await osrmRes.json();
-      if (!osrmData.routes || !osrmData.routes.length) throw new Error('Sem rota OSRM');
+      if (!osrmData.routes || !osrmData.routes.length) throw new Error('Sem rota');
       return osrmData.routes[0].geometry;
-    } catch (_) {
-      throw new Error('Não foi possível calcular a rota. Tente novamente em instantes.');
+    } catch (e2) {
+      osrmErr = e2.message || 'erro desconhecido';
+      throw new Error('Não foi possível calcular a rota. Tente novamente em instantes. (GraphHopper: ' + ghErr + ' · OSRM: ' + osrmErr + ')');
     }
   }
 }
