@@ -535,7 +535,7 @@ function getWeather(pts, date) {
     });
 }
 
-function genWhatsApp(dados, oN, dN, date, hora, km) {
+function genWhatsApp(dados, oN, dN, date, hora, km, shareUrl) {
   var mx = Math.max.apply(null, dados.map(function(d) { return d.mm; }));
   var v;
   if (mx < 0.1) v = '\u2705 Viagem seca';
@@ -552,7 +552,18 @@ function genWhatsApp(dados, oN, dN, date, hora, km) {
   });
   t += '\n_Dados: Open-Meteo (GFS) \u2022 ' + new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '_';
   t += '\n_Criado em Trajeto: https://trajetoapp.com.br/_';
+  if (shareUrl) t += '\n\n\ud83d\udd17 Veja o trajeto completo:\n' + shareUrl;
   return t;
+}
+
+async function shortenUrl(longUrl) {
+  try {
+    var r = await fetch('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(longUrl));
+    if (!r.ok) return longUrl;
+    return await r.text();
+  } catch (e) {
+    return longUrl;
+  }
 }
 
 function currentFormState() {
@@ -565,36 +576,36 @@ function currentFormState() {
   };
 }
 
-function buildShareUrl(state, autorun) {
-  var url = new URL(window.location.href);
-  url.search = '';
-  url.hash = '';
-  if (state.origem) url.searchParams.set('origem', state.origem);
-  if (state.destino) url.searchParams.set('destino', state.destino);
-  if (state.data) url.searchParams.set('data', state.data);
-  if (state.hora) url.searchParams.set('hora', state.hora);
-  if (state.velocidade) url.searchParams.set('velocidade', state.velocidade);
-  if (autorun) url.searchParams.set('autorun', '1');
-  return url.toString();
+function buildShareUrl(state) {
+  var base = window.location.origin + window.location.pathname;
+  var parts = [];
+  if (state.origem) parts.push('o=' + encodeURIComponent(state.origem));
+  if (state.destino) parts.push('d=' + encodeURIComponent(state.destino));
+  if (state.data) parts.push('dt=' + encodeURIComponent(state.data));
+  if (state.hora) parts.push('h=' + encodeURIComponent(state.hora));
+  if (state.velocidade) parts.push('v=' + encodeURIComponent(state.velocidade));
+  return base + (parts.length ? '#' + parts.join('&') : '');
 }
 
 function fillFormFromUrl() {
-  var params = new URLSearchParams(window.location.search);
-  var origem = params.get('origem');
-  var destino = params.get('destino');
-  var data = params.get('data');
-  var hora = params.get('hora');
-  var velocidade = parseInt(params.get('velocidade') || '', 10);
+  var hash = window.location.hash.replace(/^#/, '');
+  if (!hash) return false;
+  var params = new URLSearchParams(hash);
+  var origem = params.get('o');
+  var destino = params.get('d');
+  var data = params.get('dt');
+  var hora = params.get('h');
+  var velocidade = parseInt(params.get('v') || '', 10);
 
-  if (origem) document.getElementById('origem').value = origem;
-  if (destino) document.getElementById('destino').value = destino;
-  if (data) document.getElementById('data').value = data;
-  if (hora) document.getElementById('hora').value = hora;
+  if (origem) document.getElementById('origem').value = decodeURIComponent(origem);
+  if (destino) document.getElementById('destino').value = decodeURIComponent(destino);
+  if (data) document.getElementById('data').value = decodeURIComponent(data);
+  if (hora) document.getElementById('hora').value = decodeURIComponent(hora);
   if (!isNaN(velocidade)) {
     document.getElementById('velocidade').value = Math.min(160, Math.max(40, velocidade));
   }
 
-  return params.get('autorun') === '1';
+  return !!(origem && destino && data && hora);
 }
 
 function copyText(btnId, text, idleLabel, okLabel) {
@@ -705,9 +716,10 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine) {
   html += '</div>';
   html += '<div class="footer">Dados ao vivo: Open-Meteo (GFS/ICON) + ' + routeEngine + '/OpenStreetMap<br>';
   html += 'Consultado: ' + new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  var wppLabel = navigator.share ? '\ud83d\udcf1 Compartilhar' : '\ud83d\udcf1 Enviar no WhatsApp';
   html += '<br><button class="btn-sm" onclick="location.reload()">\ud83d\udd04 Atualizar</button>';
   html += '<button class="share-btn" id="share-btn">\ud83d\udd17 Copiar link</button>';
-  html += '<button class="wpp-btn" id="wpp-btn">\ud83d\udcf1 Copiar WhatsApp</button>';
+  html += '<button class="wpp-btn" id="wpp-btn">' + wppLabel + '</button>';
   html += brandFooterHtml();
   html += '</div></div>';
 
@@ -715,14 +727,54 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine) {
   el.innerHTML = html;
   el.style.display = 'block';
 
-  history.replaceState(null, '', buildShareUrl(currentFormState(), true));
+  var longUrl = buildShareUrl(currentFormState());
+  history.replaceState(null, '', longUrl);
+
+  var shortUrlReady = null;
+  var shortUrlPromise = shortenUrl(longUrl).then(function(url) { shortUrlReady = url; return url; });
 
   var wt = genWhatsApp(dados, oN, dN, date, hora, km);
-  document.getElementById('wpp-btn').addEventListener('click', function() {
-    copyText('wpp-btn', wt, '\ud83d\udcf1 Copiar WhatsApp', '\u2705 Copiado!');
+
+  document.getElementById('wpp-btn').addEventListener('click', async function() {
+    var btn = this;
+    var idleLabel = btn.textContent;
+    var shareUrl;
+    if (shortUrlReady !== null) {
+      shareUrl = shortUrlReady;
+    } else {
+      btn.disabled = true;
+      btn.textContent = '\u23f3 Gerando link...';
+      shareUrl = await shortUrlPromise;
+      btn.disabled = false;
+      btn.textContent = idleLabel;
+    }
+    var fullWt = genWhatsApp(dados, oN, dN, date, hora, km, shareUrl);
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Previsão de Chuva \u2014 ' + oN + ' \u2192 ' + dN, text: fullWt }); } catch (e) {}
+    } else {
+      window.open('https://wa.me/?text=' + encodeURIComponent(fullWt), '_blank');
+    }
   });
-  document.getElementById('share-btn').addEventListener('click', function() {
-    copyText('share-btn', buildShareUrl(currentFormState(), true), '\ud83d\udd17 Copiar link', '\u2705 Link copiado!');
+
+  document.getElementById('share-btn').addEventListener('click', async function() {
+    var btn = this;
+    var idleLabel = btn.textContent;
+    var shareUrl;
+    if (shortUrlReady !== null) {
+      shareUrl = shortUrlReady;
+    } else {
+      btn.disabled = true;
+      btn.textContent = '\u23f3 Gerando link...';
+      shareUrl = await shortUrlPromise;
+      btn.disabled = false;
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      btn.textContent = '\u2705 Link copiado!';
+      setTimeout(function() { btn.textContent = idleLabel; }, 2000);
+    } catch (e) {
+      btn.textContent = idleLabel;
+    }
   });
 
   var map = L.map('map');
@@ -764,7 +816,7 @@ function voltarForm() {
   document.getElementById('results-screen').style.display = 'none';
   document.getElementById('results-screen').innerHTML = '';
   document.getElementById('form-screen').style.display = 'block';
-  history.replaceState(null, '', buildShareUrl(currentFormState(), false));
+  history.replaceState(null, '', window.location.pathname);
 }
 
 function showLoad(t, s) {
