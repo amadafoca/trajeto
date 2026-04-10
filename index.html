@@ -256,6 +256,9 @@ a { color: var(--accent); text-decoration: none; }
 .brand-chip { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--brd); background: rgba(255,255,255,0.03); color: var(--txt); font-size: 12px; font-weight: 600; }
 .brand-chip:hover { border-color: var(--accent); background: rgba(129,140,248,0.08); }
 .brand-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--blue); flex-shrink: 0; }
+.gmaps-link { display: inline-flex; align-items: center; gap: 7px; color: var(--accent); font-size: 12px; font-weight: 500; border: 1px solid var(--brd); border-radius: 8px; padding: 7px 14px; background: transparent; transition: border-color 0.2s, background 0.2s; text-decoration: none; margin-bottom: 18px; }
+.gmaps-link:hover { border-color: var(--accent); background: var(--accent-soft); }
+.gmaps-link svg { width: 14px; height: 14px; flex-shrink: 0; }
 .btn-sm { background: var(--card2); color: var(--dim); border: 1px solid var(--brd); border-radius: 8px; padding: 8px 18px; font-size: 12px; cursor: pointer; font-family: inherit; margin-top: 8px; }
 .btn-sm:hover { border-color: var(--accent); }
 .share-btn { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 600; margin-top: 8px; margin-left: 8px; }
@@ -289,6 +292,38 @@ a { color: var(--accent); text-decoration: none; }
   .intro-title { font-size: 14px; max-width: 25ch; }
   .form-panel { padding: 14px; border-radius: 22px; }
 }
+
+/* Autocomplete de cidades */
+.ac-wrap { position: relative; }
+.ac-list {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #1a1c24;
+  border: 1px solid rgba(126,144,181,0.22);
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 200;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.44);
+  list-style: none;
+  padding: 4px 0;
+}
+.ac-list.ac-open { display: block; }
+.ac-list li {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--txt);
+  transition: background 0.15s;
+  line-height: 1.3;
+}
+.ac-list li .ac-main { font-weight: 500; display: block; }
+.ac-list li .ac-sub { font-size: 11px; color: var(--dim); display: block; margin-top: 2px; }
+.ac-list li:hover,
+.ac-list li.ac-active { background: rgba(109,147,255,0.14); }
+.ac-list li.ac-active .ac-main { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -320,11 +355,17 @@ a { color: var(--accent); text-decoration: none; }
           <label for="origem">Origem</label>
           <button type="button" class="locate-btn" id="locate-btn">Usar minha localização</button>
         </div>
-        <input type="text" id="origem" placeholder="Ex: Rio de Janeiro" required>
+        <div class="ac-wrap">
+          <input type="text" id="origem" placeholder="Ex: Rio de Janeiro" required autocomplete="off">
+          <ul class="ac-list"></ul>
+        </div>
       </div>
       <div class="field">
         <label>Destino</label>
-        <input type="text" id="destino" placeholder="Ex: Sao Paulo" required>
+        <div class="ac-wrap">
+          <input type="text" id="destino" placeholder="Ex: Sao Paulo" required autocomplete="off">
+          <ul class="ac-list"></ul>
+        </div>
       </div>
       <div class="row">
         <div class="field">
@@ -342,7 +383,7 @@ a { color: var(--accent); text-decoration: none; }
       </div>
       <button type="submit" class="btn-main" id="submit-btn">Consultar previsão</button>
       <div class="error-msg" id="error-msg"></div>
-      <p class="speed-note">Dados: Open-Meteo &middot; Rota: OSRM/OpenStreetMap &middot; Gratuito, sem cadastro</p>
+      <p class="speed-note">Dados: Open-Meteo &middot; Rota: OpenStreetMap &middot; Gratuito, sem cadastro</p>
     </form>
   </div>
   <div class="site-brand">
@@ -364,6 +405,7 @@ a { color: var(--accent); text-decoration: none; }
       </a>
     </div>
   </div>
+  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;"><!--BUILD--></span>
 </div>
 
 <div class="loading-overlay" id="loading" style="display:none">
@@ -405,10 +447,41 @@ function geocode(q) {
     .then(function(d) { if (!d.length) throw new Error('Local nao encontrado: ' + q); return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon), name: d[0].display_name.split(',')[0] }; });
 }
 
+async function fetchRoute(origin, destination) {
+  var ghUrl = 'https://graphhopper.com/api/1/route?point=' + origin.lat + ',' + origin.lng + '&point=' + destination.lat + ',' + destination.lng + '&profile=car&locale=pt_BR&points_encoded=false&key=3b6f83cd-cc7e-4003-b433-fa5425570bc2';
+  var osrmUrl = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' + origin.lng + ',' + origin.lat + ';' + destination.lng + ',' + destination.lat + '?overview=full&geometries=geojson';
+  function raceTimeout(promise, ms) {
+    return Promise.race([promise, new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Timeout')); }, ms); })]);
+  }
+  var ghErr, osrmErr;
+  try {
+    var ghRes = await raceTimeout(fetch(ghUrl), 8000);
+    if (!ghRes.ok) { var ghBody = await ghRes.text().catch(function() { return ''; }); throw new Error('HTTP ' + ghRes.status + (ghBody.indexOf('message') > -1 ? ' — ' + (JSON.parse(ghBody).message || '').slice(0, 80) : '')); }
+    var ghData = await ghRes.json();
+    if (!ghData.paths || !ghData.paths.length) throw new Error('Sem rota');
+    return { geometry: ghData.paths[0].points, routeEngine: 'GraphHopper' };
+  } catch (e) {
+    ghErr = e.message || 'erro desconhecido';
+    try {
+      var osrmRes = await fetch(osrmUrl);
+      if (!osrmRes.ok) throw new Error('HTTP ' + osrmRes.status);
+      var osrmData = await osrmRes.json();
+      if (!osrmData.routes || !osrmData.routes.length) throw new Error('Sem rota');
+      return { geometry: osrmData.routes[0].geometry, routeEngine: 'OSRM' };
+    } catch (e2) {
+      osrmErr = e2.message || 'erro desconhecido';
+      throw new Error('Não foi possível calcular a rota. Tente novamente em instantes. (GraphHopper: ' + ghErr + ' · OSRM: ' + osrmErr + ')');
+    }
+  }
+}
+
 function getRoute(o, d) {
-  return fetch('https://router.project-osrm.org/route/v1/driving/' + o.lon + ',' + o.lat + ';' + d.lon + ',' + d.lat + '?overview=full&geometries=geojson')
-    .then(function(r) { if (!r.ok) throw new Error('Rota nao encontrada'); return r.json(); })
-    .then(function(j) { if (!j.routes || !j.routes.length) throw new Error('Sem rota'); return { geometry: j.routes[0].geometry, dist: j.routes[0].distance / 1000 }; });
+  return fetchRoute({ lat: o.lat, lng: o.lon }, { lat: d.lat, lng: d.lon })
+    .then(function(result) {
+      var c = result.geometry.coordinates, dist = 0;
+      for (var i = 1; i < c.length; i++) { dist += haversine(c[i-1][1], c[i-1][0], c[i][1], c[i][0]); }
+      return { geometry: result.geometry, dist: dist, routeEngine: result.routeEngine };
+    });
 }
 
 function samplePoints(geo, n, oN, dN) {
@@ -447,7 +520,7 @@ function estimateTimes(pts, geo, depH, spd) {
 function getWeather(pts, date) {
   var lats = pts.map(function(p) { return p.lat.toFixed(3); }).join(',');
   var lons = pts.map(function(p) { return p.lon.toFixed(3); }).join(',');
-  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lats + '&longitude=' + lons + '&hourly=precipitation,precipitation_probability&timezone=America/Sao_Paulo&start_date=' + date + '&end_date=' + date;
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lats + '&longitude=' + lons + '&hourly=precipitation,precipitation_probability,temperature_2m&timezone=America/Sao_Paulo&start_date=' + date + '&end_date=' + date;
   return fetch(url)
     .then(function(r) { if (!r.ok) throw new Error('Open-Meteo falhou'); return r.json(); })
     .then(function(j) {
@@ -455,17 +528,18 @@ function getWeather(pts, date) {
       return pts.map(function(p, i) {
         var pr = locs[i].hourly.precipitation;
         var pb = locs[i].hourly.precipitation_probability || [];
+        var pt = locs[i].hourly.temperature_2m || [];
         var hi = Math.min(23, Math.max(0, Math.round(p.hora)));
         var s = Math.max(0, Math.round(pts[0].hora));
         var e = Math.min(23, Math.round(pts[pts.length-1].hora) + 1);
         var ctx = [];
         for (var k = s; k <= e; k++) ctx.push({ h: k, mm: pr[k] || 0 });
-        return Object.assign({}, p, { mm: pr[hi] || 0, prob: pb[hi] || 0, ctx: ctx, ctxS: s });
+        return Object.assign({}, p, { mm: pr[hi] || 0, prob: pb[hi] || 0, temp: pt[hi] != null ? pt[hi] : null, ctx: ctx, ctxS: s });
       });
     });
 }
 
-function genWhatsApp(dados, oN, dN, date, hora, km) {
+function genWhatsApp(dados, oN, dN, date, hora, km, shareUrl) {
   var mx = Math.max.apply(null, dados.map(function(d) { return d.mm; }));
   var v;
   if (mx < 0.1) v = '\u2705 Viagem seca';
@@ -482,7 +556,18 @@ function genWhatsApp(dados, oN, dN, date, hora, km) {
   });
   t += '\n_Dados: Open-Meteo (GFS) \u2022 ' + new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '_';
   t += '\n_Criado em Trajeto: https://trajetoapp.com.br/_';
+  if (shareUrl) t += '\n\n\ud83d\udd17 Veja o trajeto completo:\n' + shareUrl;
   return t;
+}
+
+async function shortenUrl(longUrl) {
+  try {
+    var r = await fetch('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(longUrl));
+    if (!r.ok) return longUrl;
+    return await r.text();
+  } catch (e) {
+    return longUrl;
+  }
 }
 
 function currentFormState() {
@@ -495,36 +580,36 @@ function currentFormState() {
   };
 }
 
-function buildShareUrl(state, autorun) {
-  var url = new URL(window.location.href);
-  url.search = '';
-  url.hash = '';
-  if (state.origem) url.searchParams.set('origem', state.origem);
-  if (state.destino) url.searchParams.set('destino', state.destino);
-  if (state.data) url.searchParams.set('data', state.data);
-  if (state.hora) url.searchParams.set('hora', state.hora);
-  if (state.velocidade) url.searchParams.set('velocidade', state.velocidade);
-  if (autorun) url.searchParams.set('autorun', '1');
-  return url.toString();
+function buildShareUrl(state) {
+  var base = window.location.origin + window.location.pathname;
+  var parts = [];
+  if (state.origem) parts.push('o=' + encodeURIComponent(state.origem));
+  if (state.destino) parts.push('d=' + encodeURIComponent(state.destino));
+  if (state.data) parts.push('dt=' + encodeURIComponent(state.data));
+  if (state.hora) parts.push('h=' + encodeURIComponent(state.hora));
+  if (state.velocidade) parts.push('v=' + encodeURIComponent(state.velocidade));
+  return base + (parts.length ? '#' + parts.join('&') : '');
 }
 
 function fillFormFromUrl() {
-  var params = new URLSearchParams(window.location.search);
-  var origem = params.get('origem');
-  var destino = params.get('destino');
-  var data = params.get('data');
-  var hora = params.get('hora');
-  var velocidade = parseInt(params.get('velocidade') || '', 10);
+  var hash = window.location.hash.replace(/^#/, '');
+  if (!hash) return false;
+  var params = new URLSearchParams(hash);
+  var origem = params.get('o');
+  var destino = params.get('d');
+  var data = params.get('dt');
+  var hora = params.get('h');
+  var velocidade = parseInt(params.get('v') || '', 10);
 
-  if (origem) document.getElementById('origem').value = origem;
-  if (destino) document.getElementById('destino').value = destino;
-  if (data) document.getElementById('data').value = data;
-  if (hora) document.getElementById('hora').value = hora;
+  if (origem) document.getElementById('origem').value = decodeURIComponent(origem);
+  if (destino) document.getElementById('destino').value = decodeURIComponent(destino);
+  if (data) document.getElementById('data').value = decodeURIComponent(data);
+  if (hora) document.getElementById('hora').value = decodeURIComponent(hora);
   if (!isNaN(velocidade)) {
     document.getElementById('velocidade').value = Math.min(160, Math.max(40, velocidade));
   }
 
-  return params.get('autorun') === '1';
+  return !!(origem && destino && data && hora);
 }
 
 function copyText(btnId, text, idleLabel, okLabel) {
@@ -555,10 +640,11 @@ function brandFooterHtml() {
           '<span>@diogomoreno</span>' +
         '</a>' +
       '</div>' +
-    '</div>';
+    '</div>' +
+    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;"><!--BUILD--></span>';
 }
 
-function buildResults(dados, routeGeo, oN, dN, date, hora, km) {
+function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoord, dCoord) {
   var mx = Math.max.apply(null, dados.map(function(d) { return d.mm; }));
   var mxC = Math.max.apply(null, dados.reduce(function(a, d) { return a.concat(d.ctx.map(function(c) { return c.mm; })); }, [0.1]));
   var secos = dados.filter(function(d) { return d.mm < 0.1; }).length;
@@ -601,6 +687,7 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km) {
   html += '<div style="font-size:26px;flex-shrink:0">' + v.i + '</div>';
   html += '<div><div style="font-weight:600;font-size:14px;color:' + v.c + '">' + v.t + '</div>';
   html += '<div style="color:#8b90a0;font-size:12px;margin-top:3px">Max ' + mx.toFixed(1) + 'mm \u00b7 ' + secos + '/' + dados.length + ' pontos secos</div></div></div>';
+  html += '<a class="gmaps-link" href="https://www.google.com/maps/dir/?api=1&origin=' + oCoord.lat + ',' + oCoord.lon + '&destination=' + dCoord.lat + ',' + dCoord.lon + '&travelmode=two-wheeler" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Ver rota no Google Maps</a>';
   html += '<div class="sec-title">Previsão por trecho</div>';
   html += '<div class="timeline"><div class="tl-line"></div>';
 
@@ -610,7 +697,8 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km) {
     html += '<div class="stop">';
     html += '<div class="dot" style="border-color:' + c.cor + ';background:' + c.cor + '22" onclick="panTo(' + idx + ')"></div>';
     html += '<div class="scard" onclick="panTo(' + idx + ')">';
-    html += '<div class="s-head"><span class="s-name">' + p.nome + '</span><span class="chip">' + horaStr(p.hora) + '</span></div>';
+    var tempStr = p.temp != null ? '<span style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.9);line-height:1">' + Math.round(p.temp) + '\u00b0</span>' : '';
+    html += '<div class="s-head"><span class="s-name">' + p.nome + '</span><div style="display:flex;align-items:center;gap:7px">' + tempStr + '<span class="chip">' + horaStr(p.hora) + '</span></div></div>';
     html += '<div class="s-data">';
     html += '<div><div class="mv" style="color:' + c.cor + '">' + p.mm.toFixed(1) + 'mm</div><div class="ml">precipitacao</div></div>';
     html += '<div><div class="mv" style="color:#8b90a0">' + p.prob + '%</div><div class="ml">probabilidade</div></div>';
@@ -632,11 +720,12 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km) {
   html += '<div class="notes"><h3>\ud83c\udfcd\ufe0f Dicas pro piloto</h3>';
   dicas.forEach(function(d) { html += '<p>' + d + '</p>'; });
   html += '</div>';
-  html += '<div class="footer">Dados ao vivo: Open-Meteo (GFS/ICON) + OpenStreetMap/OSRM<br>';
+  html += '<div class="footer">Dados ao vivo: Open-Meteo (GFS/ICON) + ' + routeEngine + '/OpenStreetMap<br>';
   html += 'Consultado: ' + new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  var wppLabel = navigator.share ? '\ud83d\udcf1 Compartilhar' : '\ud83d\udcf1 Enviar no WhatsApp';
   html += '<br><button class="btn-sm" onclick="location.reload()">\ud83d\udd04 Atualizar</button>';
   html += '<button class="share-btn" id="share-btn">\ud83d\udd17 Copiar link</button>';
-  html += '<button class="wpp-btn" id="wpp-btn">\ud83d\udcf1 Copiar WhatsApp</button>';
+  html += '<button class="wpp-btn" id="wpp-btn">' + wppLabel + '</button>';
   html += brandFooterHtml();
   html += '</div></div>';
 
@@ -644,14 +733,54 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km) {
   el.innerHTML = html;
   el.style.display = 'block';
 
-  history.replaceState(null, '', buildShareUrl(currentFormState(), true));
+  var longUrl = buildShareUrl(currentFormState());
+  history.replaceState(null, '', longUrl);
+
+  var shortUrlReady = null;
+  var shortUrlPromise = shortenUrl(longUrl).then(function(url) { shortUrlReady = url; return url; });
 
   var wt = genWhatsApp(dados, oN, dN, date, hora, km);
-  document.getElementById('wpp-btn').addEventListener('click', function() {
-    copyText('wpp-btn', wt, '\ud83d\udcf1 Copiar WhatsApp', '\u2705 Copiado!');
+
+  document.getElementById('wpp-btn').addEventListener('click', async function() {
+    var btn = this;
+    var idleLabel = btn.textContent;
+    var shareUrl;
+    if (shortUrlReady !== null) {
+      shareUrl = shortUrlReady;
+    } else {
+      btn.disabled = true;
+      btn.textContent = '\u23f3 Gerando link...';
+      shareUrl = await shortUrlPromise;
+      btn.disabled = false;
+      btn.textContent = idleLabel;
+    }
+    var fullWt = genWhatsApp(dados, oN, dN, date, hora, km, shareUrl);
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Previsão de Chuva \u2014 ' + oN + ' \u2192 ' + dN, text: fullWt }); } catch (e) {}
+    } else {
+      window.open('https://wa.me/?text=' + encodeURIComponent(fullWt), '_blank');
+    }
   });
-  document.getElementById('share-btn').addEventListener('click', function() {
-    copyText('share-btn', buildShareUrl(currentFormState(), true), '\ud83d\udd17 Copiar link', '\u2705 Link copiado!');
+
+  document.getElementById('share-btn').addEventListener('click', async function() {
+    var btn = this;
+    var idleLabel = btn.textContent;
+    var shareUrl;
+    if (shortUrlReady !== null) {
+      shareUrl = shortUrlReady;
+    } else {
+      btn.disabled = true;
+      btn.textContent = '\u23f3 Gerando link...';
+      shareUrl = await shortUrlPromise;
+      btn.disabled = false;
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      btn.textContent = '\u2705 Link copiado!';
+      setTimeout(function() { btn.textContent = idleLabel; }, 2000);
+    } catch (e) {
+      btn.textContent = idleLabel;
+    }
   });
 
   var map = L.map('map');
@@ -693,7 +822,7 @@ function voltarForm() {
   document.getElementById('results-screen').style.display = 'none';
   document.getElementById('results-screen').innerHTML = '';
   document.getElementById('form-screen').style.display = 'block';
-  history.replaceState(null, '', buildShareUrl(currentFormState(), false));
+  history.replaceState(null, '', window.location.pathname);
 }
 
 function showLoad(t, s) {
@@ -804,7 +933,7 @@ document.getElementById('route-form').addEventListener('submit', function(e) {
         }).then(function(dados) {
           hideLoad();
           document.getElementById('form-screen').style.display = 'none';
-          buildResults(dados, route.geometry, orig.name, dest.name, dt, hr, route.dist);
+          buildResults(dados, route.geometry, orig.name, dest.name, dt, hr, route.dist, route.routeEngine, orig, dest);
         });
       });
     })
@@ -824,6 +953,128 @@ if (shouldAutorun) {
     document.getElementById('route-form').requestSubmit();
   }
 }
+</script>
+
+<script>
+/* Autocomplete de cidades via Photon (komoot) */
+(function () {
+  var STATE_SIGLA = {"Acre":"AC","Alagoas":"AL","Amapá":"AP","Amazonas":"AM","Bahia":"BA","Ceará":"CE","Distrito Federal":"DF","Espírito Santo":"ES","Goiás":"GO","Maranhão":"MA","Mato Grosso":"MT","Mato Grosso do Sul":"MS","Minas Gerais":"MG","Pará":"PA","Paraíba":"PB","Paraná":"PR","Pernambuco":"PE","Piauí":"PI","Rio de Janeiro":"RJ","Rio Grande do Norte":"RN","Rio Grande do Sul":"RS","Rondônia":"RO","Roraima":"RR","Santa Catarina":"SC","São Paulo":"SP","Sergipe":"SE","Tocantins":"TO"};
+
+  function setupAC(inputEl) {
+    var list = inputEl.parentElement.querySelector('.ac-list');
+    var timer = null;
+    var activeIdx = -1;
+    var results = [];
+
+    function showList() { list.classList.add('ac-open'); }
+    function hideList() { list.classList.remove('ac-open'); activeIdx = -1; }
+    function clearActive() {
+      Array.from(list.children).forEach(function (li) { li.classList.remove('ac-active'); });
+    }
+
+    function selectItem(item) {
+      inputEl.value = item.display;
+      hideList();
+    }
+
+    function renderResults(items) {
+      results = items;
+      list.innerHTML = '';
+      activeIdx = -1;
+      items.forEach(function (item) {
+        var li = document.createElement('li');
+        var main = document.createElement('span');
+        main.className = 'ac-main';
+        main.textContent = item.main;
+        var sub = document.createElement('span');
+        sub.className = 'ac-sub';
+        sub.textContent = item.sub;
+        li.appendChild(main);
+        if (item.sub) li.appendChild(sub);
+        li.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          selectItem(item);
+        });
+        list.appendChild(li);
+      });
+      items.length ? showList() : hideList();
+    }
+
+    function fetchSuggestions(q) {
+      fetch(
+        'https://photon.komoot.io/api/?q=' + encodeURIComponent(q) + '&limit=5&bbox=-74,-34,-35,6&layer=city&lat=-22.9&lon=-43.2'
+      )
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var seen = {};
+          var items = [];
+          (data.features || []).forEach(function (f) {
+            var p = f.properties || {};
+            if ((p.countrycode || '').toUpperCase() !== 'BR') return;
+            var city = p.name || '';
+            if (!city) return;
+            var stateName = p.state || '';
+            var stateSub = STATE_SIGLA[stateName] || stateName;
+            var key = city + '|' + stateSub;
+            if (seen[key]) return;
+            seen[key] = true;
+            items.push({ main: city, sub: stateSub, display: city + (stateSub ? ', ' + stateSub : '') });
+          });
+          renderResults(items.slice(0, 5));
+        })
+        .catch(function () { hideList(); });
+    }
+
+    inputEl.addEventListener('input', function () {
+      clearTimeout(timer);
+      var q = inputEl.value.trim();
+      if (q.length < 3) { hideList(); return; }
+      timer = setTimeout(function () { fetchSuggestions(q); }, 300);
+    });
+
+    inputEl.addEventListener('keydown', function (e) {
+      if (!list.classList.contains('ac-open')) return;
+      var items = list.querySelectorAll('li');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        clearActive();
+        activeIdx = (activeIdx + 1) % items.length;
+        items[activeIdx].classList.add('ac-active');
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        clearActive();
+        activeIdx = (activeIdx - 1 + items.length) % items.length;
+        items[activeIdx].classList.add('ac-active');
+      } else if (e.key === 'Enter') {
+        if (activeIdx >= 0 && results[activeIdx]) {
+          e.preventDefault();
+          selectItem(results[activeIdx]);
+        }
+      } else if (e.key === 'Escape') {
+        hideList();
+      }
+    });
+
+    inputEl.addEventListener('blur', function () {
+      setTimeout(hideList, 150);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    setupAC(document.getElementById('origem'));
+    setupAC(document.getElementById('destino'));
+  });
+
+  document.addEventListener('click', function (e) {
+    ['origem', 'destino'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && !el.parentElement.contains(e.target)) {
+        var list = el.parentElement.querySelector('.ac-list');
+        if (list) list.classList.remove('ac-open');
+      }
+    });
+  });
+})();
 </script>
 </body>
 </html>
