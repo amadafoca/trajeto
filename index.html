@@ -289,6 +289,38 @@ a { color: var(--accent); text-decoration: none; }
   .intro-title { font-size: 14px; max-width: 25ch; }
   .form-panel { padding: 14px; border-radius: 22px; }
 }
+
+/* Autocomplete de cidades */
+.ac-wrap { position: relative; }
+.ac-list {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #1a1c24;
+  border: 1px solid rgba(126,144,181,0.22);
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 200;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.44);
+  list-style: none;
+  padding: 4px 0;
+}
+.ac-list.ac-open { display: block; }
+.ac-list li {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--txt);
+  transition: background 0.15s;
+  line-height: 1.3;
+}
+.ac-list li .ac-main { font-weight: 500; display: block; }
+.ac-list li .ac-ctx { font-size: 11px; color: var(--dim); display: block; margin-top: 2px; }
+.ac-list li:hover,
+.ac-list li.ac-active { background: rgba(109,147,255,0.14); }
+.ac-list li.ac-active .ac-main { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -320,11 +352,17 @@ a { color: var(--accent); text-decoration: none; }
           <label for="origem">Origem</label>
           <button type="button" class="locate-btn" id="locate-btn">Usar minha localização</button>
         </div>
-        <input type="text" id="origem" placeholder="Ex: Rio de Janeiro" required>
+        <div class="ac-wrap">
+          <input type="text" id="origem" placeholder="Ex: Rio de Janeiro" required autocomplete="off">
+          <ul class="ac-list"></ul>
+        </div>
       </div>
       <div class="field">
         <label>Destino</label>
-        <input type="text" id="destino" placeholder="Ex: Sao Paulo" required>
+        <div class="ac-wrap">
+          <input type="text" id="destino" placeholder="Ex: Sao Paulo" required autocomplete="off">
+          <ul class="ac-list"></ul>
+        </div>
       </div>
       <div class="row">
         <div class="field">
@@ -824,6 +862,120 @@ if (shouldAutorun) {
     document.getElementById('route-form').requestSubmit();
   }
 }
+</script>
+
+<script>
+/* Autocomplete de cidades via Nominatim (OSM) */
+(function () {
+  function setupAC(inputEl) {
+    var list = inputEl.parentElement.querySelector('.ac-list');
+    var timer = null;
+    var activeIdx = -1;
+    var results = [];
+
+    function showList() { list.classList.add('ac-open'); }
+    function hideList() { list.classList.remove('ac-open'); activeIdx = -1; }
+    function clearActive() {
+      Array.from(list.children).forEach(function (li) { li.classList.remove('ac-active'); });
+    }
+
+    function selectItem(item) {
+      inputEl.value = item.display;
+      hideList();
+    }
+
+    function renderResults(items) {
+      results = items;
+      list.innerHTML = '';
+      activeIdx = -1;
+      items.forEach(function (item) {
+        var li = document.createElement('li');
+        var main = document.createElement('span');
+        main.className = 'ac-main';
+        main.textContent = item.main;
+        var ctx = document.createElement('span');
+        ctx.className = 'ac-ctx';
+        ctx.textContent = item.ctx;
+        li.appendChild(main);
+        if (item.ctx) li.appendChild(ctx);
+        li.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          selectItem(item);
+        });
+        list.appendChild(li);
+      });
+      items.length ? showList() : hideList();
+    }
+
+    function fetchSuggestions(q) {
+      fetch(
+        'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=5&addressdetails=1',
+        { headers: { 'User-Agent': 'TrajetoApp/1.0', 'Accept-Language': 'pt-BR' } }
+      )
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var items = data.slice(0, 5).map(function (d) {
+            var parts = d.display_name.split(',').map(function (s) { return s.trim(); });
+            var main = parts[0];
+            var ctx = parts.slice(1, 4).filter(Boolean).join(', ');
+            var display = main + (parts[1] ? ', ' + parts[1].trim() : '');
+            return { main: main, ctx: ctx, display: display };
+          });
+          renderResults(items);
+        })
+        .catch(function () { hideList(); });
+    }
+
+    inputEl.addEventListener('input', function () {
+      clearTimeout(timer);
+      var q = inputEl.value.trim();
+      if (q.length < 3) { hideList(); return; }
+      timer = setTimeout(function () { fetchSuggestions(q); }, 300);
+    });
+
+    inputEl.addEventListener('keydown', function (e) {
+      if (!list.classList.contains('ac-open')) return;
+      var items = list.querySelectorAll('li');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        clearActive();
+        activeIdx = (activeIdx + 1) % items.length;
+        items[activeIdx].classList.add('ac-active');
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        clearActive();
+        activeIdx = (activeIdx - 1 + items.length) % items.length;
+        items[activeIdx].classList.add('ac-active');
+      } else if (e.key === 'Enter') {
+        if (activeIdx >= 0 && results[activeIdx]) {
+          e.preventDefault();
+          selectItem(results[activeIdx]);
+        }
+      } else if (e.key === 'Escape') {
+        hideList();
+      }
+    });
+
+    inputEl.addEventListener('blur', function () {
+      setTimeout(hideList, 150);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    setupAC(document.getElementById('origem'));
+    setupAC(document.getElementById('destino'));
+  });
+
+  document.addEventListener('click', function (e) {
+    ['origem', 'destino'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && !el.parentElement.contains(e.target)) {
+        var list = el.parentElement.querySelector('.ac-list');
+        if (list) list.classList.remove('ac-open');
+      }
+    });
+  });
+})();
 </script>
 </body>
 </html>
