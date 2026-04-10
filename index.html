@@ -911,7 +911,7 @@ if (shouldAutorun) {
 
     function fetchSuggestions(q) {
       fetch(
-        'https://photon.komoot.io/api/?q=' + encodeURIComponent(q) + '&lang=pt&limit=5&layer=city&lat=-22.9&lon=-43.2'
+        'https://photon.komoot.io/api/?q=' + encodeURIComponent(q) + '&lang=default&limit=5&layer=city&lat=-22.9&lon=-43.2'
       )
         .then(function (r) { return r.json(); })
         .then(function (data) {
@@ -931,7 +931,7 @@ if (shouldAutorun) {
           });
           renderResults(items.slice(0, 5));
         })
-        .catch(function (err) { console.log('AC error:', err); hideList(); });
+        .catch(function () { hideList(); });
     }
 
     inputEl.addEventListener('input', function () {
