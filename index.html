@@ -402,6 +402,7 @@ a { color: var(--accent); text-decoration: none; }
       </a>
     </div>
   </div>
+  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;"><!--BUILD--></span>
 </div>
 
 <div class="loading-overlay" id="loading" style="display:none">
@@ -624,7 +625,8 @@ function brandFooterHtml() {
           '<span>@diogomoreno</span>' +
         '</a>' +
       '</div>' +
-    '</div>';
+    '</div>' +
+    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;"><!--BUILD--></span>';
 }
 
 function buildResults(dados, routeGeo, oN, dN, date, hora, km) {
