@@ -919,6 +919,7 @@ if (shouldAutorun) {
           var items = [];
           (data.features || []).forEach(function (f) {
             var p = f.properties || {};
+            if ((p.countrycode || '').toUpperCase() !== 'BR') return;
             var city = p.name || '';
             if (!city) return;
             var stateName = p.state || '';
