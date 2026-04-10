@@ -911,7 +911,7 @@ if (shouldAutorun) {
 
     function fetchSuggestions(q) {
       fetch(
-        'https://photon.komoot.io/api/?q=' + encodeURIComponent(q) + '&lang=default&limit=5&layer=city&lat=-22.9&lon=-43.2'
+        'https://photon.komoot.io/api/?q=' + encodeURIComponent(q) + '&limit=5&bbox=-74,-34,-35,6&layer=city&lat=-22.9&lon=-43.2'
       )
         .then(function (r) { return r.json(); })
         .then(function (data) {
@@ -922,8 +922,7 @@ if (shouldAutorun) {
             var city = p.name || '';
             if (!city) return;
             var stateName = p.state || '';
-            var isBrazil = (p.countrycode || '').toUpperCase() === 'BR';
-            var stateSub = isBrazil ? (STATE_SIGLA[stateName] || stateName) : stateName;
+            var stateSub = STATE_SIGLA[stateName] || stateName;
             var key = city + '|' + stateSub;
             if (seen[key]) return;
             seen[key] = true;
