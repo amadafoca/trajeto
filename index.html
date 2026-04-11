@@ -442,9 +442,16 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 function geocode(q) {
-  return fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1', { headers: { 'User-Agent': 'trajeto/1.0' } })
+  return fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1&countrycodes=br', { headers: { 'User-Agent': 'trajeto/1.0' } })
     .then(function(r) { if (!r.ok) throw new Error('Geocoding falhou'); return r.json(); })
     .then(function(d) { if (!d.length) throw new Error('Local nao encontrado: ' + q); return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon), name: d[0].display_name.split(',')[0] }; });
+}
+
+function geocodeInput(inputEl, q) {
+  if (inputEl.dataset.lat && inputEl.dataset.lon) {
+    return Promise.resolve({ lat: parseFloat(inputEl.dataset.lat), lon: parseFloat(inputEl.dataset.lon), name: q.split(',')[0].trim() });
+  }
+  return geocode(q);
 }
 
 async function fetchRoute(origin, destination) {
@@ -903,8 +910,10 @@ document.getElementById('route-form').addEventListener('submit', function(e) {
   btn.disabled = true;
   btn.textContent = 'Consultando...';
 
+  var oInput = document.getElementById('origem');
+  var dInput = document.getElementById('destino');
   showLoad('Geocodificando cidades...', oQ + ' \u2192 ' + dQ);
-  Promise.all([geocode(oQ), geocode(dQ)])
+  Promise.all([geocodeInput(oInput, oQ), geocodeInput(dInput, dQ)])
     .then(function(res) {
       var orig = res[0], dest = res[1];
       showLoad('Calculando rota rodoviaria...', orig.name + ' \u2192 ' + dest.name);
@@ -974,6 +983,10 @@ if (shouldAutorun) {
 
     function selectItem(item) {
       inputEl.value = item.display;
+      if (item.lat != null && item.lon != null) {
+        inputEl.dataset.lat = item.lat;
+        inputEl.dataset.lon = item.lon;
+      }
       hideList();
     }
 
@@ -1018,7 +1031,8 @@ if (shouldAutorun) {
             var key = city + '|' + stateSub;
             if (seen[key]) return;
             seen[key] = true;
-            items.push({ main: city, sub: stateSub, display: city + (stateSub ? ', ' + stateSub : '') });
+            var coords = (f.geometry && f.geometry.coordinates) || [];
+            items.push({ main: city, sub: stateSub, display: city + (stateSub ? ', ' + stateSub : ''), lat: coords[1], lon: coords[0] });
           });
           renderResults(items.slice(0, 5));
         })
@@ -1027,6 +1041,8 @@ if (shouldAutorun) {
 
     inputEl.addEventListener('input', function () {
       clearTimeout(timer);
+      delete inputEl.dataset.lat;
+      delete inputEl.dataset.lon;
       var q = inputEl.value.trim();
       if (q.length < 3) { hideList(); return; }
       timer = setTimeout(function () { fetchSuggestions(q); }, 300);
