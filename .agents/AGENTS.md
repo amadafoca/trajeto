@@ -10,7 +10,7 @@
 - **Branch de publicação:** `gh-pages` (gerado automaticamente pelo workflow de deploy)
 - **Domínio público:** `https://trajetoapp.com.br/`
 - **CNAME esperado:** `trajetoapp.com.br`
-- **Stack:** site estático, sem build, sem framework
+- **Stack:** site estático, sem framework — possui build step intermediário via GitHub Actions (injeção do SHA do commit no placeholder `<!--BUILD-->`)
 - **Arquivo principal:** `index.html`
 
 ### Deploy
@@ -265,4 +265,4 @@ These rules apply to any coding agent or LLM operating on this repo.
 
 ## Fast summary
 
-Trajeto is a Brazilian digital product initially focused on motorcyclists. It helps users understand the weather along a route before departure. The official brand is Trajeto, the default tagline is "O clima do seu caminho," and the brand should feel like a modern, premium, practical digital product — not a biker club or a generic weather tool. The app is a static site deployed via GitHub Actions to the branch `gh-pages` at `trajetoapp.com.br`.
+Trajeto is a Brazilian digital product initially focused on motorcyclists. It helps users understand the weather along a route before departure. The official brand is Trajeto, the default tagline is "O clima do seu caminho," and the brand should feel like a modern, premium, practical digital product — not a biker club or a generic weather tool. The app is a static site with um build step intermediário (injeção de versão via GitHub Actions), deployed automaticamente ao branch `gh-pages` em `trajetoapp.com.br`.
