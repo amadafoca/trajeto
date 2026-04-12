@@ -1,5 +1,8 @@
 # AGENTS.md — Trajeto
 
+Este arquivo complementa as [regras globais de engenharia](https://github.com/amadafoca/engineering/blob/main/AGENTS.md).
+Em caso de conflito, este arquivo prevalece.
+
 ---
 
 ## Repository and deploy
@@ -10,7 +13,6 @@
 - **Branch de publicação:** `gh-pages` (gerado automaticamente pelo workflow de deploy)
 - **Domínio público:** `https://trajetoapp.com.br/`
 - **CNAME esperado:** `trajetoapp.com.br`
-- **Stack:** site estático, sem framework — possui build step intermediário via GitHub Actions (injeção do SHA do commit no placeholder `<!--BUILD-->`)
 - **Arquivo principal:** `index.html`
 
 ### Deploy
@@ -23,246 +25,128 @@ O deploy é feito automaticamente via GitHub Actions (`.github/workflows/deploy.
 4. O GitHub Pages serve o site a partir do branch `gh-pages` (root).
 
 **Regras importantes:**
-- O `index.html` contém o placeholder `<!--BUILD-->` no rodapé. Ele **não deve ser substituído manualmente** — a substituição é feita exclusivamente pelo workflow de deploy.
+- O placeholder `<!--BUILD-->` no rodapé **não deve ser substituído manualmente** — a substituição é feita exclusivamente pelo workflow.
 - Não faça push diretamente no branch `gh-pages`. Ele é gerenciado pelo GitHub Actions.
-- O branch `main` é o branch de desenvolvimento principal. Todas as alterações devem ser feitas nele.
+- Todas as alterações devem ser feitas no branch `main`.
 
 ---
 
-## Brand
+## Stack e integrações
 
-Trajeto is the official public-facing brand.
-Use Trajeto App only as an internal project reference when needed.
+Site estático, sem framework, sem build local.
 
-Do not reopen the Trajeto vs SkyRoad naming decision unless explicitly requested.
+| Camada | Serviço | Notas |
+|---|---|---|
+| Hosting | GitHub Pages | Branch `gh-pages`, deploy via GitHub Actions |
+| Autocomplete | Photon API (`photon.komoot.io`) | `lang=pt` não funciona no public instance; filtrar client-side com `countrycode === 'BR'` (sem underscore) |
+| Geocoding | Nominatim | Não incluir `countrycodes=br` para destinos internacionais; `User-Agent` obrigatório |
+| Routing (primário) | GraphHopper | — |
+| Routing (fallback) | OSRM | Semicolon-separated `lon,lat`; `geometries=geojson&overview=full` |
+| Weather | Open-Meteo | Chave `precipitation` em mm; timezone `America/Sao_Paulo`; `precipitation_probability` pode estar ausente |
+| Mapa | Leaflet + CARTO dark tiles | — |
 
-Do not reintroduce legacy branding from Moto Weather Route in any form.
+**APIs descartadas:**
+- Windy Point Forecast API — free tier retorna dados embaralhados, confirmado como não confiável.
 
----
-
-## Branding assets
-
-Active assets referenced in the current layout:
-
-| Role | File |
-|---|---|
-| Ícone do topo | `trajeto-icon-padded.png` |
-| Wordmark do header | `trajeto-wordmark.png` |
-| Favicon | `trajeto-favicon-512.png` |
-
-Deprecated assets — do not use in the layout:
-
-- `banner_desktop.png`
-- `banner_mobile.png`
-
-Before swapping or removing any asset, verify whether it is actually referenced in the codebase.
+**Google Maps links:** usar coordenadas lat/lng do Nominatim (não texto raw); `travelmode=two-wheeler` é suportado com fallback graceful.
 
 ---
 
 ## Product
 
-Trajeto is a digital product initially focused on motorcyclists in Brazil.
+Trajeto é um produto digital inicialmente focado em motociclistas no Brasil. Ajuda o usuário a entender o clima ao longo da rota antes de sair, combinando origem, destino, data, horário de partida e velocidade média.
 
-It helps users understand the weather along the route before departure by combining:
-- origin
-- destination
-- date
-- departure time
-- average speed
+**Core idea:** Não é a previsão da cidade. É a previsão da sua rota.
 
-The product is about route-aware forecast, not just weather in a city.
-
-**Core idea**
-
-Não é a previsão da cidade. É a previsão da sua rota.
+**Positioning:** Trajeto é a maneira inteligente de entender o clima do trajeto antes de sair. Ajuda o usuário a decidir melhor quando sair, entender onde a chuva afeta a rota, se preparar de forma prática e reduzir surpresas na estrada.
 
 ---
 
-## Positioning
+## Brand e tom de voz
 
-Trajeto helps users:
-- decide better when to leave
-- understand where rain affects the route
-- prepare more practically
-- reduce surprises on the road
+**Nome oficial:** Trajeto. Usar "Trajeto App" apenas como referência interna quando necessário.
 
-**Main positioning line**
+**Tagline padrão:** O clima do seu caminho
 
-Trajeto is the smart way to understand the climate of the route before departure.
+**Tom de voz:** claro, direto, confiável, prático, moderno, sóbrio. Deve soar como um co-piloto inteligente.
 
----
+**Personalidade:** inteligente, útil, claro, confiável, premium, digital-first.
 
-## Tagline
+**Evitar:** gírias forçadas, jargão de startup, clichês de motociclismo, tom aventureiro exagerado, melodrama.
 
-**Default tagline**
-
-O clima do seu caminho
-
-Use this as the main brand signature by default.
+**Não deve parecer:** um clube de motociclistas, uma marca off-road, um dashboard de agência meteorológica, um template genérico de startup, um MVP hacky.
 
 ---
 
-## Tone of voice
+## Direção visual
 
-Trajeto should sound:
-- clear
-- direct
-- trustworthy
-- practical
-- modern
-- sober
+Tratar o Trajeto como um produto digital premium, não como uma marca de lifestyle motociclista.
 
-It should feel like a smart co-pilot.
+**Estilo desejado:** dark premium base, minimal, clean, geométrico, mobile-first, inspirado em rota/movimento/horizonte.
 
-Avoid:
-- forced slang
-- startup jargon
-- biker clichés
-- exaggerated adventure tone
-- melodrama
+**Paleta de cores:** base escura premium com acentos em deep blue, blue-violet, electric blue controlado, cold cyan, teal refinado. Evitar roxo genérico de template e excesso de neon.
+
+**Direção de logo:** T monograma formado por linha de rota, ou path + horizonte minimal, ou wordmark custom com cues sutis de rota. Deve ser simples, memorável, horizontal, app-icon friendly, forte em fundo escuro, funcional em tamanhos pequenos.
+
+**Evitar:** escudos, brasões, motocicletas literais, nuvens, raios, map pins, estética off-road agressiva, poluição visual.
 
 ---
 
-## Brand personality
+## Branding assets
 
-Trajeto should feel:
-- intelligent
-- useful
-- clear
-- reliable
-- premium
-- digital-first
+Assets ativos referenciados no layout atual:
 
-It should not feel like:
-- a biker club
-- an off-road brand
-- a weather agency dashboard
-- a generic startup template
-- a hacky MVP
+| Role | Arquivo |
+|---|---|
+| Ícone do topo | `trajeto-icon-padded.png` |
+| Wordmark do header | `trajeto-wordmark.png` |
+| Favicon | `trajeto-favicon-512.png` |
+
+**Deprecated — não usar no layout:**
+- `banner_desktop.png`
+- `banner_mobile.png`
 
 ---
 
-## Visual direction
+## Header / hero e UX copy
 
-Treat Trajeto as a premium digital product, not a motorcycle lifestyle brand.
+O topo da landing page deve ser minimal: brand (icon + wordmark), tagline, linha funcional, form.
 
-**Desired style**
-- dark premium base
-- minimal
-- clean
-- geometric
-- mobile-first
-- route/movement/horizon inspired
-
-**Avoid**
-- shields
-- crests
-- literal motorcycle visuals
-- clouds, lightning, map pins
-- aggressive off-road aesthetics
-- visual clutter
-
----
-
-## Logo direction
-
-The project should have a logo.
-
-**Best directions**
-1. T monogram formed by a route line
-2. Minimal path + horizon symbol
-3. Custom Trajeto wordmark with subtle route cues
-
-**Logo requirements**
-- simple
-- memorable
-- horizontal
-- app-icon friendly
-- strong on dark backgrounds
-- functional at small sizes
-
----
-
-## Color direction
-
-Use a dark premium base with accents around:
-- deep blue
-- blue-violet
-- controlled electric blue
-- cold cyan
-- refined teal
-
-Avoid generic-looking template purple and flashy neon excess.
-
----
-
-## Header / hero rules
-
-The brand must appear once, strongly and clearly at the top.
-
-The top of the landing page must remain minimal:
-- brand (icon + wordmark)
-- tagline
-- short functional line
-- form
-
-**Recommended hierarchy**
+**Hierarquia recomendada:**
 1. Brand header
-2. Short atmospheric hero
-3. Functional headline
-4. Supporting line
+2. Hero atmosférico curto
+3. Headline funcional
+4. Linha de suporte
 5. Form / CTA
 
-**Approved top copy**
+**Copy aprovado:**
 
-Trajeto
-O clima do seu caminho
+- **Header:** Trajeto — O clima do seu caminho
+- **Headline funcional:** Veja o clima do seu trajeto antes de sair
+- **Linha de suporte:** Informe origem, destino, horário e velocidade média para visualizar a previsão de chuva ao longo da rota.
 
-**Approved functional headline**
+Não repetir a marca de forma fraca múltiplas vezes na seção superior.
 
-Veja o clima do seu trajeto antes de sair
-
-**Approved support line**
-
-Informe origem, destino, horário e velocidade média para visualizar a previsão de chuva ao longo da rota.
-
-Do not repeat the brand weakly multiple times in the top section.
-
----
-
-## UX copy principle
-
-All copy should help the user make a decision.
-
-Prioritize:
-- route-aware weather
-- departure timing
-- practical preparation
-- clarity before leaving
+**Princípio de UX copy:** todo texto deve ajudar o usuário a tomar uma decisão. Priorizar: previsão por rota, timing de partida, preparação prática, clareza antes de sair.
 
 ---
 
 ## Agent rules
 
-These rules apply to any coding agent or LLM operating on this repo.
+Regras específicas para agentes operando neste repositório.
 
-**Form protection**
-- Do not modify the form or its fields without an explicit request.
+**Form protection:**
+- Não modificar o formulário ou seus campos sem pedido explícito.
 
-**Asset discipline**
-- Before swapping, renaming, or removing any asset, verify it is actually referenced in the code.
-- When adjusting branding, prefer fine-tuning proportion and alignment before altering structure or layout.
+**Asset discipline:**
+- Antes de trocar, renomear ou remover qualquer asset, verificar se está referenciado no código.
+- Ao ajustar branding, preferir ajuste fino de proporção e alinhamento antes de alterar estrutura ou layout.
 
-**Legacy guard**
-- Do not reintroduce any Moto Weather Route branding, naming, or assets.
-- Do not use `banner_desktop.png` or `banner_mobile.png` in the layout.
+**Legacy guard:**
+- Não reintroduzir branding, naming ou assets do Moto Weather Route.
+- Não usar `banner_desktop.png` ou `banner_mobile.png` no layout.
+- Não reabrir a decisão de naming Trajeto vs SkyRoad salvo pedido explícito.
 
-**Repo / domain rule**
-- Preferred repository name: `trajeto`
-- Do not let domain or repo constraints redefine the public brand unnecessarily.
-
----
-
-## Fast summary
-
-Trajeto is a Brazilian digital product initially focused on motorcyclists. It helps users understand the weather along a route before departure. The official brand is Trajeto, the default tagline is "O clima do seu caminho," and the brand should feel like a modern, premium, practical digital product — not a biker club or a generic weather tool. The app is a static site with um build step intermediário (injeção de versão via GitHub Actions), deployed automaticamente ao branch `gh-pages` em `trajetoapp.com.br`.
+**Repo / domain:**
+- Nome preferido do repositório: `trajeto`
+- Não deixar restrições de domínio ou repo redefinir a marca pública.
