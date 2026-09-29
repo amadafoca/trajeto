@@ -620,55 +620,64 @@ function getRoutes(o, d) {
     });
 }
 
-// Troca "Ponto N" pelo nome da cidade, só para a rota exibida: Photon em paralelo;
-// os pontos que o Photon não resolver vão ao Nominatim, um por segundo
+// Troca "Ponto N" pelo município mais próximo, só para a rota exibida: Photon em paralelo;
+// os pontos que o Photon não resolver vão ao Nominatim, um por segundo.
+// Evita repetir a origem, o destino e o ponto anterior: um ponto ainda dentro do município
+// de Teresópolis passa a levar o nome do próximo município mais perto (ex.: Sapucaia)
 function nameRoutePoints(dados) {
   var mid = dados.slice(1, -1);
   return Promise.all(mid.map(function(p) { return reverseGeoPhoton(p.lat, p.lon); }))
-    .then(function(names) {
+    .then(function(cands) {
       var chain = Promise.resolve(), first = true;
       mid.forEach(function(p, i) {
-        if (names[i]) { p.nome = names[i]; return; }
+        if (cands[i].length) return;
         chain = chain.then(function() {
           var wait = first ? Promise.resolve() : new Promise(function(r) { setTimeout(r, 1100); });
           first = false;
-          return wait.then(function() { return reverseGeoNominatim(p.lat, p.lon); }).then(function(nm) { if (nm) p.nome = nm; });
+          return wait.then(function() { return reverseGeoNominatim(p.lat, p.lon); }).then(function(nm) { if (nm) cands[i] = [nm]; });
         });
       });
-      return chain.then(function() { dedupeNames(dados); });
+      return chain.then(function() {
+        var oN = dados[0].nome, dN = dados[dados.length - 1].nome;
+        mid.forEach(function(p, i) {
+          var prev = dados[i].nome;
+          var livre = cands[i].filter(function(n) { return n !== oN && n !== dN && n !== prev; })[0];
+          if (livre || cands[i][0]) p.nome = livre || cands[i][0];
+        });
+      });
     });
-}
-
-// Pontos no mesmo município repetiriam o nome (ex.: dois "Teresópolis"): marca o km da rota
-function dedupeNames(dados) {
-  var dN = dados[dados.length - 1].nome;
-  for (var i = 1; i < dados.length - 1; i++) {
-    var p = dados[i], prev = dados[i - 1].nome.split(' \u00b7 km')[0];
-    if (p.nome === prev || p.nome === dN) p.nome += ' \u00b7 km ' + Math.round(p.km);
-  }
 }
 
 function samplePoints(geo, n, oN, dN) {
   var c = geo.coordinates, pts = [], tot = c.length, step = Math.max(1, Math.floor(tot / (n + 1)));
-  var km = [0];
-  for (var j = 1; j < tot; j++) km.push(km[j-1] + haversine(c[j-1][1], c[j-1][0], c[j][1], c[j][0]));
-  pts.push({ lat: c[0][1], lon: c[0][0], nome: oN, idx: 0, km: 0 });
-  for (var i = 1; i <= n; i++) { var ci = Math.min(i * step, tot - 1); pts.push({ lat: c[ci][1], lon: c[ci][0], nome: 'Ponto ' + i, idx: ci, km: km[ci] }); }
+  pts.push({ lat: c[0][1], lon: c[0][0], nome: oN, idx: 0 });
+  for (var i = 1; i <= n; i++) { var ci = Math.min(i * step, tot - 1); pts.push({ lat: c[ci][1], lon: c[ci][0], nome: 'Ponto ' + i, idx: ci }); }
   pts.push({ lat: c[tot-1][1], lon: c[tot-1][0], nome: dN, idx: tot - 1 });
   return pts;
 }
 
-// Nome da cidade de um ponto via Photon (sem limite de 1 req/s, permite consultas em paralelo)
+// Municípios mais próximos de um ponto via Photon, do mais perto ao mais longe (sem limite
+// de 1 req/s, permite consultas em paralelo). layer=city traz o centro de cada município
 function reverseGeoPhoton(lat, lon) {
-  return fetch('https://photon.komoot.io/reverse?lat=' + lat + '&lon=' + lon + '&limit=1')
-    .then(function(r) { if (!r.ok) return null; return r.json(); })
-    .then(function(d) {
-      var p = d && d.features && d.features[0] && d.features[0].properties;
-      if (!p) return null;
+  var get = function(qs) {
+    return fetch('https://photon.komoot.io/reverse?lat=' + lat + '&lon=' + lon + qs)
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(d) { return (d && d.features || []).map(function(f) { return f.properties || {}; }); })
+      .catch(function() { return []; });
+  };
+  return get('&layer=city&limit=5&radius=40').then(function(ps) {
+    var names = [];
+    ps.forEach(function(p) { if (p.name && names.indexOf(p.name) < 0) names.push(p.name); });
+    if (names.length) return names;
+    // Sem cidade no raio: município que contém o ponto, como antes
+    return get('&limit=1').then(function(ps) {
+      var p = ps[0];
+      if (!p) return [];
       var placeTypes = ['city', 'town', 'village', 'municipality', 'locality'];
-      return p.city || (placeTypes.indexOf(p.type) > -1 ? p.name : null) || p.county || p.district || null;
-    })
-    .catch(function() { return null; });
+      var n = p.city || (placeTypes.indexOf(p.type) > -1 ? p.name : null) || p.county || p.district;
+      return n ? [n] : [];
+    });
+  });
 }
 
 // Fallback: Nominatim (política de uso: no máximo 1 req/s)
