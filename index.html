@@ -784,8 +784,13 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
   });
 
   var map = L.map('map');
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '\u00a9 OSM \u00a9 CARTO', subdomains: 'abcd', maxZoom: 19
+  // Esri Dark Gray Canvas: sem API key (CARTO passou a exigir chave)
+  var esriBase = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+  L.tileLayer(esriBase + 'World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles \u00a9 Esri \u2014 Esri, HERE, Garmin, \u00a9 OSM', maxZoom: 16
+  }).addTo(map);
+  L.tileLayer(esriBase + 'World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 16
   }).addTo(map);
 
   if (routeGeo) {
