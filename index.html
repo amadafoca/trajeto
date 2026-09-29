@@ -387,10 +387,6 @@ a { color: var(--accent); text-decoration: none; }
           <input type="time" id="hora" value="08:00" required>
         </div>
       </div>
-      <div class="field">
-        <label>Velocidade media (km/h)</label>
-        <input type="number" id="velocidade" value="90" min="40" max="160" step="10">
-      </div>
       <button type="submit" class="btn-main" id="submit-btn">Consultar previsão</button>
       <div class="error-msg" id="error-msg"></div>
       <p class="speed-note">Dados: Open-Meteo &middot; Rota: OpenStreetMap &middot; Gratuito, sem cadastro</p>
@@ -415,7 +411,7 @@ a { color: var(--accent); text-decoration: none; }
       </a>
     </div>
   </div>
-  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 896c917</span>
+  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build fd2fb3c</span>
 </div>
 
 <div class="loading-overlay" id="loading" style="display:none">
@@ -745,8 +741,7 @@ function currentFormState() {
     origem: document.getElementById('origem').value.trim(),
     destino: document.getElementById('destino').value.trim(),
     data: document.getElementById('data').value,
-    hora: document.getElementById('hora').value,
-    velocidade: String(parseInt(document.getElementById('velocidade').value, 10) || 90)
+    hora: document.getElementById('hora').value
   };
 }
 
@@ -757,7 +752,6 @@ function buildShareUrl(state) {
   if (state.destino) parts.push('d=' + encodeURIComponent(state.destino));
   if (state.data) parts.push('dt=' + encodeURIComponent(state.data));
   if (state.hora) parts.push('h=' + encodeURIComponent(state.hora));
-  if (state.velocidade) parts.push('v=' + encodeURIComponent(state.velocidade));
   return base + (parts.length ? '#' + parts.join('&') : '');
 }
 
@@ -769,15 +763,11 @@ function fillFormFromUrl() {
   var destino = params.get('d');
   var data = params.get('dt');
   var hora = params.get('h');
-  var velocidade = parseInt(params.get('v') || '', 10);
 
   if (origem) document.getElementById('origem').value = decodeURIComponent(origem);
   if (destino) document.getElementById('destino').value = decodeURIComponent(destino);
   if (data) document.getElementById('data').value = decodeURIComponent(data);
   if (hora) document.getElementById('hora').value = decodeURIComponent(hora);
-  if (!isNaN(velocidade)) {
-    document.getElementById('velocidade').value = Math.min(160, Math.max(40, velocidade));
-  }
 
   return !!(origem && destino && data && hora);
 }
@@ -811,7 +801,7 @@ function brandFooterHtml() {
         '</a>' +
       '</div>' +
     '</div>' +
-    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 896c917</span>';
+    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build fd2fb3c</span>';
 }
 
 // res: { routes: [{ geometry, dist, time, label, dados, named }], oN, dN, date, hora, routeEngine, oCoord, dCoord }

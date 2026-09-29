@@ -43,7 +43,7 @@ Site estático, sem framework, sem build local.
 | Routing (primário) | GraphHopper | Até 3 rotas (`algorithm=alternative_route`); se recusado, repete sem alternativas. `details=street_ref` rotula a rota ("via BR-265") |
 | Routing (fallback) | OSRM | Semicolon-separated `lon,lat`; `geometries=geojson&overview=full&alternatives=3&steps=true` (`step.ref` rotula a rota) |
 | Nomes dos pontos da rota | Photon reverse (`photon.komoot.io/reverse`) | Consultas em paralelo; pontos sem nome caem no Nominatim reverse a 1 req/s |
-| Horários de passagem | Tempo do roteador | GraphHopper `details=time`; OSRM `annotations=duration`. O campo "velocidade média" do formulário não entra no cálculo |
+| Horários de passagem | Tempo do roteador | GraphHopper `details=time`; OSRM `annotations=duration`. Não há campo de velocidade no formulário |
 | Weather | Open-Meteo | Chave `precipitation` em mm; timezone `America/Sao_Paulo`; `precipitation_probability` pode estar ausente |
 | Mapa | Leaflet + OpenStreetMap tiles (padrão) / Esri World Street Map (alternativa) | Sem API key. Esri só carrega via controle de camadas ou fallback se o OSM falhar. CARTO descartado: passou a exigir API key |
 
@@ -56,7 +56,7 @@ Site estático, sem framework, sem build local.
 
 ## Product
 
-Trajeto é um produto digital inicialmente focado em motociclistas no Brasil. Ajuda o usuário a entender o clima ao longo da rota antes de sair, combinando origem, destino, data, horário de partida e velocidade média.
+Trajeto é um produto digital inicialmente focado em motociclistas no Brasil. Ajuda o usuário a entender o clima ao longo da rota antes de sair, combinando origem, destino, data e horário de partida.
 
 **Core idea:** Não é a previsão da cidade. É a previsão da sua rota.
 
@@ -125,7 +125,7 @@ O topo da landing page deve ser minimal: brand (icon + wordmark), tagline, linha
 
 - **Header:** Trajeto — O clima do seu caminho
 - **Headline funcional:** Veja o clima do seu trajeto antes de sair
-- **Linha de suporte:** Informe origem, destino, horário e velocidade média para visualizar a previsão de chuva ao longo da rota.
+- **Linha de suporte:** Informe origem, destino e horário para visualizar a previsão de chuva ao longo da rota.
 
 Não repetir a marca de forma fraca múltiplas vezes na seção superior.
 

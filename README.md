@@ -2,7 +2,7 @@
 
 Previsão de chuva trecho a trecho para viagens de moto no Brasil.
 
-Informe origem, destino, data, horário e velocidade média — o app calcula a rota, consulta a previsão hora a hora e mostra no mapa com relatório detalhado.
+Informe origem, destino, data e horário — o app calcula a rota, consulta a previsão hora a hora e mostra no mapa com relatório detalhado.
 
 ## Stack
 
@@ -45,7 +45,7 @@ trajeto/
 
 ## Funcionalidades
 
-- Formulário com origem, destino, data, hora e velocidade média
+- Formulário com origem, destino, data e hora (horários de passagem calculados pelo tempo do roteador)
 - Autocomplete de cidades brasileiras (Photon API)
 - Geocoding automático e reverse geocoding dos pontos intermediários
 - Rota rodoviária real com fallback automático (GraphHopper → OSRM)
