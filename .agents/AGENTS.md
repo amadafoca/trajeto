@@ -42,6 +42,8 @@ Site estático, sem framework, sem build local.
 | Geocoding | Nominatim | Não incluir `countrycodes=br` para destinos internacionais; `User-Agent` obrigatório |
 | Routing (primário) | GraphHopper | Até 3 rotas (`algorithm=alternative_route`); se recusado, repete sem alternativas. `details=street_ref` rotula a rota ("via BR-265") |
 | Routing (fallback) | OSRM | Semicolon-separated `lon,lat`; `geometries=geojson&overview=full&alternatives=3&steps=true` (`step.ref` rotula a rota) |
+| Nomes dos pontos da rota | Photon reverse (`photon.komoot.io/reverse`) | Consultas em paralelo; pontos sem nome caem no Nominatim reverse a 1 req/s |
+| Horários de passagem | Tempo do roteador | GraphHopper `details=time`; OSRM `annotations=duration`. O campo "velocidade média" do formulário não entra no cálculo |
 | Weather | Open-Meteo | Chave `precipitation` em mm; timezone `America/Sao_Paulo`; `precipitation_probability` pode estar ausente |
 | Mapa | Leaflet + OpenStreetMap tiles (padrão) / Esri World Street Map (alternativa) | Sem API key. Esri só carrega via controle de camadas ou fallback se o OSM falhar. CARTO descartado: passou a exigir API key |
 
