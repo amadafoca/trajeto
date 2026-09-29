@@ -405,7 +405,7 @@ a { color: var(--accent); text-decoration: none; }
       </a>
     </div>
   </div>
-  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build d54fd8b</span>
+  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 29d760b</span>
 </div>
 
 <div class="loading-overlay" id="loading" style="display:none">
@@ -641,7 +641,7 @@ function brandFooterHtml() {
         '</a>' +
       '</div>' +
     '</div>' +
-    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build d54fd8b</span>';
+    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 29d760b</span>';
 }
 
 function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoord, dCoord) {
@@ -784,14 +784,30 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
   });
 
   var map = L.map('map');
-  // Esri Dark Gray Canvas: sem API key (CARTO passou a exigir chave)
-  var esriBase = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
-  L.tileLayer(esriBase + 'World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles \u00a9 Esri \u2014 Esri, HERE, Garmin, \u00a9 OSM', maxZoom: 16
-  }).addTo(map);
-  L.tileLayer(esriBase + 'World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 16
-  }).addTo(map);
+  // OSM padrão (sem API key). Esri World Street Map fica como alternativa:
+  // uma L.tileLayer só baixa tiles depois de adicionada ao mapa, então o Esri
+  // só carrega se o usuário escolher no controle ou se o OSM falhar.
+  var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '\u00a9 <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  });
+  var esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles \u00a9 Esri \u2014 Esri, HERE, Garmin, \u00a9 OSM',
+    maxZoom: 19
+  });
+  osm.addTo(map);
+  L.control.layers({ 'OpenStreetMap': osm, 'Esri': esri }, null, { position: 'topright' }).addTo(map);
+
+  // Fallback: se o OSM falhar em vários tiles sem carregar nenhum, troca para o Esri
+  var osmOk = 0, osmErr = 0;
+  osm.on('tileload', function() { osmOk++; });
+  osm.on('tileerror', function() {
+    osmErr++;
+    if (osmOk === 0 && osmErr >= 3 && map.hasLayer(osm)) {
+      map.removeLayer(osm);
+      esri.addTo(map);
+    }
+  });
 
   if (routeGeo) {
     L.polyline(routeGeo.coordinates.map(function(c) { return [c[1], c[0]]; }), {
