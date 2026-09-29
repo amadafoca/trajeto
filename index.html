@@ -256,6 +256,16 @@ a { color: var(--accent); text-decoration: none; }
 .brand-chip { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--brd); background: rgba(255,255,255,0.03); color: var(--txt); font-size: 12px; font-weight: 600; }
 .brand-chip:hover { border-color: var(--accent); background: rgba(129,140,248,0.08); }
 .brand-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--blue); flex-shrink: 0; }
+.route-opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.route-opt { text-align: left; font: inherit; color: var(--txt); background: var(--card); border: 1px solid var(--brd); border-radius: 12px; padding: 11px 14px; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.route-opt:hover { border-color: var(--accent); }
+.route-opt.sel { border-color: var(--accent); background: var(--accent-soft); }
+.ro-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ro-name { font-weight: 600; font-size: 14px; margin-right: auto; }
+.ro-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); background: var(--accent-soft); padding: 2px 7px; border-radius: 5px; }
+.ro-badge.dry { color: var(--green); background: rgba(52,211,153,0.12); }
+.ro-meta { font-size: 12px; color: var(--dim); margin-top: 4px; }
+.ro-rain { font-size: 12px; font-weight: 600; margin-top: 3px; }
 .gmaps-link { display: inline-flex; align-items: center; gap: 7px; color: var(--accent); font-size: 12px; font-weight: 500; border: 1px solid var(--brd); border-radius: 8px; padding: 7px 14px; background: transparent; transition: border-color 0.2s, background 0.2s; text-decoration: none; margin-bottom: 18px; }
 .gmaps-link:hover { border-color: var(--accent); background: var(--accent-soft); }
 .gmaps-link svg { width: 14px; height: 14px; flex-shrink: 0; }
@@ -405,7 +415,7 @@ a { color: var(--accent); text-decoration: none; }
       </a>
     </div>
   </div>
-  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 29d760b</span>
+  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 958defb</span>
 </div>
 
 <div class="loading-overlay" id="loading" style="display:none">
@@ -447,19 +457,56 @@ function geocode(q) {
     .then(function(d) { if (!d.length) throw new Error('Local nao encontrado: ' + q); return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon), name: d[0].display_name.split(',')[0] }; });
 }
 
-async function fetchRoute(origin, destination) {
-  var ghUrl = 'https://graphhopper.com/api/1/route?point=' + origin.lat + ',' + origin.lng + '&point=' + destination.lat + ',' + destination.lng + '&profile=car&locale=pt_BR&points_encoded=false&key=3b6f83cd-cc7e-4003-b433-fa5425570bc2';
-  var osrmUrl = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' + origin.lng + ',' + origin.lat + ';' + destination.lng + ',' + destination.lat + '?overview=full&geometries=geojson';
+// Soma a distância percorrida em cada rodovia (ex.: {'BR-265': 180000}) para rotular a rota
+function addRefDist(acc, refStr, meters) {
+  if (!refStr) return;
+  String(refStr).split(/[;,]/).forEach(function(r) {
+    r = r.trim();
+    if (r) acc[r] = (acc[r] || 0) + meters;
+  });
+}
+
+function refDistFromIntervals(coords, intervals) {
+  var acc = {};
+  intervals.forEach(function(iv) {
+    var d = 0;
+    for (var i = iv[0] + 1; i <= iv[1] && i < coords.length; i++) d += haversine(coords[i-1][1], coords[i-1][0], coords[i][1], coords[i][0]) * 1000;
+    addRefDist(acc, iv[2], d);
+  });
+  return acc;
+}
+
+async function fetchRoutes(origin, destination) {
+  var ghBase = 'https://graphhopper.com/api/1/route?point=' + origin.lat + ',' + origin.lng + '&point=' + destination.lat + ',' + destination.lng + '&profile=car&locale=pt_BR&points_encoded=false&details=street_ref&key=3b6f83cd-cc7e-4003-b433-fa5425570bc2';
+  var ghAlt = ghBase + '&algorithm=alternative_route&alternative_route.max_paths=3';
+  var osrmUrl = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' + origin.lng + ',' + origin.lat + ';' + destination.lng + ',' + destination.lat + '?overview=full&geometries=geojson&alternatives=3&steps=true';
   function raceTimeout(promise, ms) {
     return Promise.race([promise, new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Timeout')); }, ms); })]);
   }
-  var ghErr, osrmErr;
-  try {
-    var ghRes = await raceTimeout(fetch(ghUrl), 8000);
+  async function tryGh(url) {
+    var ghRes = await raceTimeout(fetch(url), 8000);
     if (!ghRes.ok) { var ghBody = await ghRes.text().catch(function() { return ''; }); throw new Error('HTTP ' + ghRes.status + (ghBody.indexOf('message') > -1 ? ' — ' + (JSON.parse(ghBody).message || '').slice(0, 80) : '')); }
     var ghData = await ghRes.json();
     if (!ghData.paths || !ghData.paths.length) throw new Error('Sem rota');
-    return { geometry: ghData.paths[0].points, routeEngine: 'GraphHopper' };
+    return ghData.paths.map(function(p) {
+      return {
+        geometry: p.points,
+        time: p.time / 1000,
+        refDist: refDistFromIntervals(p.points.coordinates, (p.details && p.details.street_ref) || [])
+      };
+    });
+  }
+  var ghErr, osrmErr;
+  try {
+    var ghRoutes;
+    try {
+      ghRoutes = await tryGh(ghAlt);
+    } catch (eAlt) {
+      // Se o plano/servidor recusar rotas alternativas, tenta a rota única
+      if (eAlt.message === 'Timeout') throw eAlt;
+      ghRoutes = await tryGh(ghBase);
+    }
+    return { routes: ghRoutes, routeEngine: 'GraphHopper' };
   } catch (e) {
     ghErr = e.message || 'erro desconhecido';
     try {
@@ -467,7 +514,14 @@ async function fetchRoute(origin, destination) {
       if (!osrmRes.ok) throw new Error('HTTP ' + osrmRes.status);
       var osrmData = await osrmRes.json();
       if (!osrmData.routes || !osrmData.routes.length) throw new Error('Sem rota');
-      return { geometry: osrmData.routes[0].geometry, routeEngine: 'OSRM' };
+      return {
+        routes: osrmData.routes.map(function(r) {
+          var acc = {};
+          (r.legs || []).forEach(function(l) { (l.steps || []).forEach(function(st) { addRefDist(acc, st.ref, st.distance); }); });
+          return { geometry: r.geometry, time: r.duration, refDist: acc };
+        }),
+        routeEngine: 'OSRM'
+      };
     } catch (e2) {
       osrmErr = e2.message || 'erro desconhecido';
       throw new Error('Não foi possível calcular a rota. Tente novamente em instantes. (GraphHopper: ' + ghErr + ' · OSRM: ' + osrmErr + ')');
@@ -475,13 +529,50 @@ async function fetchRoute(origin, destination) {
   }
 }
 
-function getRoute(o, d) {
-  return fetchRoute({ lat: o.lat, lng: o.lon }, { lat: d.lat, lng: d.lon })
-    .then(function(result) {
-      var c = result.geometry.coordinates, dist = 0;
-      for (var i = 1; i < c.length; i++) { dist += haversine(c[i-1][1], c[i-1][0], c[i][1], c[i][0]); }
-      return { geometry: result.geometry, dist: dist, routeEngine: result.routeEngine };
+// Rótulo de cada rota: a rodovia que ela mais usa e as outras não (ex.: "BR-265" vs "BR-267")
+function routeLabels(routes) {
+  return routes.map(function(r, i) {
+    var best = null, bestScore = 0, top = null, topD = 0;
+    Object.keys(r.refDist).forEach(function(ref) {
+      var d = r.refDist[ref], other = 0;
+      if (d > topD) { topD = d; top = ref; }
+      routes.forEach(function(o, j) { if (j !== i) other = Math.max(other, o.refDist[ref] || 0); });
+      if (d - other > bestScore) { bestScore = d - other; best = ref; }
     });
+    return best || top;
+  });
+}
+
+function getRoutes(o, d) {
+  return fetchRoutes({ lat: o.lat, lng: o.lon }, { lat: d.lat, lng: d.lon })
+    .then(function(result) {
+      var rs = result.routes.slice(0, 3);
+      var labels = routeLabels(rs);
+      return {
+        routeEngine: result.routeEngine,
+        routes: rs.map(function(r, i) {
+          var c = r.geometry.coordinates, dist = 0;
+          for (var k = 1; k < c.length; k++) { dist += haversine(c[k-1][1], c[k-1][0], c[k][1], c[k][0]); }
+          return { geometry: r.geometry, dist: dist, time: r.time, label: labels[i] || null };
+        })
+      };
+    });
+}
+
+// Troca "Ponto N" pelo nome da cidade (Nominatim), só para a rota exibida
+function nameRoutePoints(dados) {
+  var chain = Promise.resolve();
+  for (var i = 1; i < dados.length - 1; i++) {
+    (function(idx) {
+      chain = chain.then(function() {
+        return reverseGeo(dados[idx].lat, dados[idx].lon).then(function(nm) {
+          if (nm) dados[idx].nome = nm;
+          return new Promise(function(r) { setTimeout(r, 350); });
+        });
+      });
+    })(i);
+  }
+  return chain;
 }
 
 function samplePoints(geo, n, oN, dN) {
@@ -517,29 +608,54 @@ function estimateTimes(pts, geo, depH, spd) {
   return pts.map(function(p) { return Object.assign({}, p, { hora: depH + ((dists[Math.min(p.idx, dists.length - 1)] || 0) / spd) }); });
 }
 
-function getWeather(pts, date) {
-  var lats = pts.map(function(p) { return p.lat.toFixed(3); }).join(',');
-  var lons = pts.map(function(p) { return p.lon.toFixed(3); }).join(',');
+// Recebe uma lista de pontos por rota e faz uma única chamada ao Open-Meteo para todas
+function getWeather(ptsList, date) {
+  var all = [].concat.apply([], ptsList);
+  var lats = all.map(function(p) { return p.lat.toFixed(3); }).join(',');
+  var lons = all.map(function(p) { return p.lon.toFixed(3); }).join(',');
   var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lats + '&longitude=' + lons + '&hourly=precipitation,precipitation_probability,temperature_2m&timezone=America/Sao_Paulo&start_date=' + date + '&end_date=' + date;
   return fetch(url)
     .then(function(r) { if (!r.ok) throw new Error('Open-Meteo falhou'); return r.json(); })
     .then(function(j) {
       var locs = Array.isArray(j) ? j : [j];
-      return pts.map(function(p, i) {
-        var pr = locs[i].hourly.precipitation;
-        var pb = locs[i].hourly.precipitation_probability || [];
-        var pt = locs[i].hourly.temperature_2m || [];
-        var hi = Math.min(23, Math.max(0, Math.round(p.hora)));
+      var off = 0;
+      return ptsList.map(function(pts) {
+        var base = off;
+        off += pts.length;
         var s = Math.max(0, Math.round(pts[0].hora));
         var e = Math.min(23, Math.round(pts[pts.length-1].hora) + 1);
-        var ctx = [];
-        for (var k = s; k <= e; k++) ctx.push({ h: k, mm: pr[k] || 0 });
-        return Object.assign({}, p, { mm: pr[hi] || 0, prob: pb[hi] || 0, temp: pt[hi] != null ? pt[hi] : null, ctx: ctx, ctxS: s });
+        return pts.map(function(p, i) {
+          var loc = locs[base + i];
+          var pr = loc.hourly.precipitation;
+          var pb = loc.hourly.precipitation_probability || [];
+          var pt = loc.hourly.temperature_2m || [];
+          var hi = Math.min(23, Math.max(0, Math.round(p.hora)));
+          var ctx = [];
+          for (var k = s; k <= e; k++) ctx.push({ h: k, mm: pr[k] || 0 });
+          return Object.assign({}, p, { mm: pr[hi] || 0, prob: pb[hi] || 0, temp: pt[hi] != null ? pt[hi] : null, ctx: ctx, ctxS: s });
+        });
       });
     });
 }
 
-function genWhatsApp(dados, oN, dN, date, hora, km, shareUrl) {
+function routeVerdict(mx) {
+  if (mx < 0.1) return { i: '✅', t: 'Viagem seca — sem chuva no trajeto', s: 'Seca', c: '#34d399' };
+  if (mx < 1) return { i: '✅', t: 'Viagem tranquila — apenas garoa leve', s: 'Garoa leve', c: '#34d399' };
+  if (mx < 5) return { i: '⚠️', t: 'Chuva leve em alguns trechos', s: 'Chuva leve', c: '#fbbf24' };
+  if (mx < 15) return { i: '🌧️', t: 'Chuva moderada no trajeto', s: 'Chuva moderada', c: '#f97316' };
+  return { i: '🚨', t: 'Chuva forte — considere adiar', s: 'Chuva forte', c: '#ef4444' };
+}
+
+function maxMm(dados) { return Math.max.apply(null, dados.map(function(d) { return d.mm; })); }
+
+function fmtDur(sec) {
+  var m = Math.round(sec / 60);
+  return Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0');
+}
+
+function routeName(r, i) { return 'Rota ' + String.fromCharCode(65 + i) + (r.label ? ' · via ' + r.label : ''); }
+
+function genWhatsApp(dados, oN, dN, date, hora, km, shareUrl, via) {
   var mx = Math.max.apply(null, dados.map(function(d) { return d.mm; }));
   var v;
   if (mx < 0.1) v = '\u2705 Viagem seca';
@@ -548,7 +664,7 @@ function genWhatsApp(dados, oN, dN, date, hora, km, shareUrl) {
   else if (mx < 15) v = '\ud83c\udf27\ufe0f Chuva moderada \u2014 leve capa';
   else v = '\ud83d\udea8 Chuva forte \u2014 considere adiar';
   var t = '\ud83c\udfcd\ufe0f *Previsão de Chuva \u2014 ' + oN + ' \u2192 ' + dN + '*\n';
-  t += diaSemana(date) + ' ' + fmtDate(date) + ' \u2022 Saida ' + hora + ' \u2022 ~' + Math.round(km) + 'km\n\n';
+  t += diaSemana(date) + ' ' + fmtDate(date) + ' \u2022 Saida ' + hora + ' \u2022 ~' + Math.round(km) + 'km' + (via ? ' \u2022 via ' + via : '') + '\n\n';
   t += '*' + v + '*\n\n\ud83d\udccd *Trecho a trecho:*\n\n';
   dados.forEach(function(p) {
     var c = classifica(p.mm);
@@ -641,20 +757,20 @@ function brandFooterHtml() {
         '</a>' +
       '</div>' +
     '</div>' +
-    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 29d760b</span>';
+    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 958defb</span>';
 }
 
-function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoord, dCoord) {
-  var mx = Math.max.apply(null, dados.map(function(d) { return d.mm; }));
+// res: { routes: [{ geometry, dist, time, label, dados, named }], oN, dN, date, hora, routeEngine, oCoord, dCoord }
+function buildResults(res, sel) {
+  var routes = res.routes, route = routes[sel];
+  var dados = route.dados, routeGeo = route.geometry, km = route.dist;
+  var oN = res.oN, dN = res.dN, date = res.date, hora = res.hora, routeEngine = res.routeEngine, oCoord = res.oCoord, dCoord = res.dCoord;
+  var via = routes.length > 1 ? route.label : null;
+  var mx = maxMm(dados);
   var mxC = Math.max.apply(null, dados.reduce(function(a, d) { return a.concat(d.ctx.map(function(c) { return c.mm; })); }, [0.1]));
   var secos = dados.filter(function(d) { return d.mm < 0.1; }).length;
 
-  var v;
-  if (mx < 0.1) v = { i: '\u2705', t: 'Viagem seca \u2014 sem chuva no trajeto', c: '#34d399' };
-  else if (mx < 1) v = { i: '\u2705', t: 'Viagem tranquila \u2014 apenas garoa leve', c: '#34d399' };
-  else if (mx < 5) v = { i: '\u26a0\ufe0f', t: 'Chuva leve em alguns trechos', c: '#fbbf24' };
-  else if (mx < 15) v = { i: '\ud83c\udf27\ufe0f', t: 'Chuva moderada no trajeto', c: '#f97316' };
-  else v = { i: '\ud83d\udea8', t: 'Chuva forte \u2014 considere adiar', c: '#ef4444' };
+  var v = routeVerdict(mx);
 
   var dicas = [];
   var piores = dados.filter(function(d) { return d.mm >= 0.1; }).sort(function(a, b) { return b.mm - a.mm; });
@@ -672,7 +788,7 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
   html += '<button class="back-btn" onclick="voltarForm()">\u2190 Nova consulta</button>';
   html += '<div class="badge">\ud83c\udfcd\ufe0f <span>' + oN + ' \u2192 ' + dN + '</span></div>';
   html += '<h2>Previsao de Chuva na Rota</h2>';
-  html += '<p class="sub">' + diaSemana(date) + ', ' + fmtDate(date) + ' \u00b7 Saida ' + hora + ' \u00b7 ~' + Math.round(km) + 'km</p>';
+  html += '<p class="sub">' + diaSemana(date) + ', ' + fmtDate(date) + ' \u00b7 Saida ' + hora + ' \u00b7 ~' + Math.round(km) + 'km' + (via ? ' \u00b7 via ' + via : '') + '</p>';
   html += '</div>';
   html += '<div id="map"></div>';
   html += '<div class="map-legend">';
@@ -681,8 +797,30 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
   html += '<div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>Chuva leve</div>';
   html += '<div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Moderada+</div>';
   html += '<div class="legend-item"><div style="width:20px;height:3px;background:#818cf8;border-radius:2px"></div>Rota</div>';
+  if (routes.length > 1) html += '<div class="legend-item"><div style="width:20px;height:0;border-top:3px dashed #64748b"></div>Alternativa</div>';
   html += '</div>';
   html += '<div class="content">';
+  if (routes.length > 1) {
+    var fastest = 0, driest = 0;
+    routes.forEach(function(r, i) {
+      if (r.time < routes[fastest].time) fastest = i;
+      if (maxMm(r.dados) < maxMm(routes[driest].dados)) driest = i;
+    });
+    var driestUnique = routes.filter(function(r) { return maxMm(r.dados) === maxMm(routes[driest].dados); }).length === 1;
+    html += '<div class="sec-title" style="margin-top:16px">Escolha a rota</div><div class="route-opts">';
+    routes.forEach(function(r, i) {
+      var rmx = maxMm(r.dados), rv = routeVerdict(rmx);
+      html += '<button class="route-opt' + (i === sel ? ' sel' : '') + '" onclick="selectRoute(' + i + ')">';
+      html += '<div class="ro-head"><span class="ro-name">' + routeName(r, i) + '</span>';
+      if (i === fastest) html += '<span class="ro-badge">mais rápida</span>';
+      if (i === driest && driestUnique) html += '<span class="ro-badge dry">mais seca</span>';
+      html += '</div>';
+      html += '<div class="ro-meta">~' + Math.round(r.dist) + ' km \u00b7 ' + fmtDur(r.time) + ' de direção</div>';
+      html += '<div class="ro-rain" style="color:' + rv.c + '">' + rv.i + ' ' + rv.s + ' \u00b7 max ' + rmx.toFixed(1) + 'mm</div>';
+      html += '</button>';
+    });
+    html += '</div>';
+  }
   html += '<div class="verdict" style="background:' + v.c + '0d;border-color:' + v.c + '33">';
   html += '<div style="font-size:26px;flex-shrink:0">' + v.i + '</div>';
   html += '<div><div style="font-weight:600;font-size:14px;color:' + v.c + '">' + v.t + '</div>';
@@ -729,6 +867,7 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
   html += brandFooterHtml();
   html += '</div></div>';
 
+  if (window._map) { window._map.remove(); window._map = null; }
   var el = document.getElementById('results-screen');
   el.innerHTML = html;
   el.style.display = 'block';
@@ -736,17 +875,18 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
   var longUrl = buildShareUrl(currentFormState());
   history.replaceState(null, '', longUrl);
 
-  var shortUrlReady = null;
-  var shortUrlPromise = shortenUrl(longUrl).then(function(url) { shortUrlReady = url; return url; });
-
-  var wt = genWhatsApp(dados, oN, dN, date, hora, km);
+  // Link curto gerado uma vez por consulta, reaproveitado ao trocar de rota
+  if (!res.shortUrlPromise) {
+    res.shortUrlPromise = shortenUrl(longUrl).then(function(url) { res.shortUrlReady = url; return url; });
+  }
+  var shortUrlPromise = res.shortUrlPromise;
 
   document.getElementById('wpp-btn').addEventListener('click', async function() {
     var btn = this;
     var idleLabel = btn.textContent;
     var shareUrl;
-    if (shortUrlReady !== null) {
-      shareUrl = shortUrlReady;
+    if (res.shortUrlReady) {
+      shareUrl = res.shortUrlReady;
     } else {
       btn.disabled = true;
       btn.textContent = '\u23f3 Gerando link...';
@@ -754,7 +894,7 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
       btn.disabled = false;
       btn.textContent = idleLabel;
     }
-    var fullWt = genWhatsApp(dados, oN, dN, date, hora, km, shareUrl);
+    var fullWt = genWhatsApp(dados, oN, dN, date, hora, km, shareUrl, via);
     if (navigator.share) {
       try { await navigator.share({ title: 'Previsão de Chuva \u2014 ' + oN + ' \u2192 ' + dN, text: fullWt }); } catch (e) {}
     } else {
@@ -766,8 +906,8 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
     var btn = this;
     var idleLabel = btn.textContent;
     var shareUrl;
-    if (shortUrlReady !== null) {
-      shareUrl = shortUrlReady;
+    if (res.shortUrlReady) {
+      shareUrl = res.shortUrlReady;
     } else {
       btn.disabled = true;
       btn.textContent = '\u23f3 Gerando link...';
@@ -809,11 +949,20 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
     }
   });
 
-  if (routeGeo) {
-    L.polyline(routeGeo.coordinates.map(function(c) { return [c[1], c[0]]; }), {
-      color: '#818cf8', weight: 4, opacity: 0.7
+  // Alternativas em cinza tracejado (clicáveis); a rota escolhida por cima
+  var lines = [];
+  routes.forEach(function(r, i) {
+    if (i === sel) return;
+    var alt = L.polyline(r.geometry.coordinates.map(function(c) { return [c[1], c[0]]; }), {
+      color: '#64748b', weight: 5, opacity: 0.7, dashArray: '8 8'
     }).addTo(map);
-  }
+    alt.bindTooltip(routeName(r, i), { sticky: true });
+    alt.on('click', function() { selectRoute(i); });
+    lines.push(alt);
+  });
+  lines.push(L.polyline(routeGeo.coordinates.map(function(c) { return [c[1], c[0]]; }), {
+    color: '#818cf8', weight: 4, opacity: 0.8
+  }).addTo(map));
 
   var markers = [];
   dados.forEach(function(p, i) {
@@ -829,14 +978,30 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
     m.bindPopup('<div class="popup-name">' + p.nome + '</div><div><span class="popup-mm" style="color:' + c.cor + '">' + p.mm.toFixed(1) + 'mm</span><span class="popup-tag" style="background:' + c.bg + ';color:' + c.cor + '">' + c.tag + '</span></div><div class="popup-detail">Passagem: ' + horaStr(p.hora) + ' \u00b7 Prob: ' + p.prob + '%</div>', { closeButton: false });
     markers.push(m);
   });
-  map.fitBounds(L.featureGroup(markers).getBounds().pad(0.1));
+  map.fitBounds(L.featureGroup(markers.concat(lines)).getBounds().pad(0.1));
   window._m = markers;
+  window._res = res;
   window._map = map;
 }
 
 window.panTo = function(i) {
   window._map.flyTo(window._m[i].getLatLng(), 11, { duration: 0.8 });
   window._m[i].openPopup();
+};
+
+var selectingRoute = false;
+window.selectRoute = function(i) {
+  var res = window._res;
+  if (!res || selectingRoute || !res.routes[i]) return;
+  var r = res.routes[i];
+  if (r.named) { buildResults(res, i); return; }
+  selectingRoute = true;
+  showLoad('Identificando cidades...', routeName(r, i));
+  nameRoutePoints(r.dados).then(function() {
+    r.named = true;
+    hideLoad();
+    buildResults(res, i);
+  }).finally(function() { selectingRoute = false; });
 };
 
 function voltarForm() {
@@ -929,32 +1094,24 @@ document.getElementById('route-form').addEventListener('submit', function(e) {
     .then(function(res) {
       var orig = res[0], dest = res[1];
       showLoad('Calculando rota rodoviaria...', orig.name + ' \u2192 ' + dest.name);
-      return getRoute(orig, dest).then(function(route) {
-        var nPts = Math.min(9, Math.max(3, Math.round(route.dist / 50)));
-        showLoad('Identificando cidades...', (nPts + 2) + ' pontos');
-        var pts = samplePoints(route.geometry, nPts, orig.name, dest.name);
-
-        var chain = Promise.resolve();
-        for (var i = 1; i < pts.length - 1; i++) {
-          (function(idx) {
-            chain = chain.then(function() {
-              return reverseGeo(pts[idx].lat, pts[idx].lon).then(function(nm) {
-                if (nm) pts[idx].nome = nm;
-                return new Promise(function(r) { setTimeout(r, 350); });
-              });
-            });
-          })(i);
-        }
-
-        return chain.then(function() {
-          showLoad('Estimando horarios...', spd + ' km/h media');
-          pts = estimateTimes(pts, route.geometry, depH, spd);
-          showLoad('Consultando previsão de chuva...', 'Open-Meteo \u00b7 ' + pts.length + ' pontos');
-          return getWeather(pts, dt);
-        }).then(function(dados) {
+      return getRoutes(orig, dest).then(function(rr) {
+        var routes = rr.routes;
+        var ptsList = routes.map(function(route) {
+          var nPts = Math.min(9, Math.max(3, Math.round(route.dist / 50)));
+          var pts = samplePoints(route.geometry, nPts, orig.name, dest.name);
+          return estimateTimes(pts, route.geometry, depH, spd);
+        });
+        showLoad('Consultando previsão de chuva...', 'Open-Meteo · ' + routes.length + (routes.length > 1 ? ' rotas' : ' rota'));
+        return getWeather(ptsList, dt).then(function(dadosList) {
+          routes.forEach(function(r, i) { r.dados = dadosList[i]; });
+          // Nomes das cidades só da rota exibida; as outras são nomeadas ao serem escolhidas
+          showLoad('Identificando cidades...', routes[0].dados.length + ' pontos');
+          return nameRoutePoints(routes[0].dados);
+        }).then(function() {
+          routes[0].named = true;
           hideLoad();
           document.getElementById('form-screen').style.display = 'none';
-          buildResults(dados, route.geometry, orig.name, dest.name, dt, hr, route.dist, route.routeEngine, orig, dest);
+          buildResults({ routes: routes, oN: orig.name, dN: dest.name, date: dt, hora: hr, routeEngine: rr.routeEngine, oCoord: orig, dCoord: dest }, 0);
         });
       });
     })
