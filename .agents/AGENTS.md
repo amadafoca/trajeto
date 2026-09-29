@@ -43,7 +43,7 @@ Site estático, sem framework, sem build local.
 | Routing (primário) | GraphHopper | — |
 | Routing (fallback) | OSRM | Semicolon-separated `lon,lat`; `geometries=geojson&overview=full` |
 | Weather | Open-Meteo | Chave `precipitation` em mm; timezone `America/Sao_Paulo`; `precipitation_probability` pode estar ausente |
-| Mapa | Leaflet + CARTO dark tiles | — |
+| Mapa | Leaflet + Esri Dark Gray Canvas tiles | Sem API key. CARTO descartado: passou a exigir API key |
 
 **APIs descartadas:**
 - Windy Point Forecast API — free tier retorna dados embaralhados, confirmado como não confiável.
