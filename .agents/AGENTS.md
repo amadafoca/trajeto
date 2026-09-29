@@ -40,8 +40,8 @@ Site estático, sem framework, sem build local.
 | Hosting | GitHub Pages | Branch `gh-pages`, deploy via GitHub Actions |
 | Autocomplete | Photon API (`photon.komoot.io`) | `lang=pt` não funciona no public instance; filtrar client-side com `countrycode === 'BR'` (sem underscore) |
 | Geocoding | Nominatim | Não incluir `countrycodes=br` para destinos internacionais; `User-Agent` obrigatório |
-| Routing (primário) | GraphHopper | — |
-| Routing (fallback) | OSRM | Semicolon-separated `lon,lat`; `geometries=geojson&overview=full` |
+| Routing (primário) | GraphHopper | Até 3 rotas (`algorithm=alternative_route`); se recusado, repete sem alternativas. `details=street_ref` rotula a rota ("via BR-265") |
+| Routing (fallback) | OSRM | Semicolon-separated `lon,lat`; `geometries=geojson&overview=full&alternatives=3&steps=true` (`step.ref` rotula a rota) |
 | Weather | Open-Meteo | Chave `precipitation` em mm; timezone `America/Sao_Paulo`; `precipitation_probability` pode estar ausente |
 | Mapa | Leaflet + OpenStreetMap tiles (padrão) / Esri World Street Map (alternativa) | Sem API key. Esri só carrega via controle de camadas ou fallback se o OSM falhar. CARTO descartado: passou a exigir API key |
 
