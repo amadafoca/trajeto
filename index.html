@@ -476,10 +476,36 @@ function refDistFromIntervals(coords, intervals) {
   return acc;
 }
 
+// Tempo acumulado (s) do início da rota até cada coordenada, segundo o roteador.
+// GraphHopper: details=time dá [de, até, ms] por trecho; o tempo é distribuído pela distância dentro do trecho.
+function cumTimeFromIntervals(coords, intervals) {
+  if (!intervals.length) return null;
+  var seg = [0];
+  for (var i = 1; i < coords.length; i++) seg.push(haversine(coords[i-1][1], coords[i-1][0], coords[i][1], coords[i][0]));
+  var dt = new Array(coords.length).fill(0);
+  intervals.forEach(function(iv) {
+    var tot = 0, k;
+    for (k = iv[0] + 1; k <= iv[1] && k < coords.length; k++) tot += seg[k];
+    var n = Math.max(1, Math.min(iv[1], coords.length - 1) - iv[0]);
+    for (k = iv[0] + 1; k <= iv[1] && k < coords.length; k++) dt[k] += (iv[2] / 1000) * (tot > 0 ? seg[k] / tot : 1 / n);
+  });
+  var cum = [0];
+  for (i = 1; i < coords.length; i++) cum.push(cum[i-1] + dt[i]);
+  return cum;
+}
+
+// OSRM: annotations=duration dá a duração (s) entre coordenadas consecutivas
+function cumTimeFromDurations(coords, durs) {
+  if (durs.length !== coords.length - 1) return null;
+  var cum = [0];
+  for (var i = 0; i < durs.length; i++) cum.push(cum[i] + durs[i]);
+  return cum;
+}
+
 async function fetchRoutes(origin, destination) {
-  var ghBase = 'https://graphhopper.com/api/1/route?point=' + origin.lat + ',' + origin.lng + '&point=' + destination.lat + ',' + destination.lng + '&profile=car&locale=pt_BR&points_encoded=false&details=street_ref&key=3b6f83cd-cc7e-4003-b433-fa5425570bc2';
+  var ghBase = 'https://graphhopper.com/api/1/route?point=' + origin.lat + ',' + origin.lng + '&point=' + destination.lat + ',' + destination.lng + '&profile=car&locale=pt_BR&points_encoded=false&details=street_ref&details=time&key=3b6f83cd-cc7e-4003-b433-fa5425570bc2';
   var ghAlt = ghBase + '&algorithm=alternative_route&alternative_route.max_paths=3';
-  var osrmUrl = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' + origin.lng + ',' + origin.lat + ';' + destination.lng + ',' + destination.lat + '?overview=full&geometries=geojson&alternatives=3&steps=true';
+  var osrmUrl = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' + origin.lng + ',' + origin.lat + ';' + destination.lng + ',' + destination.lat + '?overview=full&geometries=geojson&alternatives=3&steps=true&annotations=duration';
   function raceTimeout(promise, ms) {
     return Promise.race([promise, new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Timeout')); }, ms); })]);
   }
@@ -492,6 +518,7 @@ async function fetchRoutes(origin, destination) {
       return {
         geometry: p.points,
         time: p.time / 1000,
+        cumTime: cumTimeFromIntervals(p.points.coordinates, (p.details && p.details.time) || []),
         refDist: refDistFromIntervals(p.points.coordinates, (p.details && p.details.street_ref) || [])
       };
     });
@@ -516,9 +543,12 @@ async function fetchRoutes(origin, destination) {
       if (!osrmData.routes || !osrmData.routes.length) throw new Error('Sem rota');
       return {
         routes: osrmData.routes.map(function(r) {
-          var acc = {};
-          (r.legs || []).forEach(function(l) { (l.steps || []).forEach(function(st) { addRefDist(acc, st.ref, st.distance); }); });
-          return { geometry: r.geometry, time: r.duration, refDist: acc };
+          var acc = {}, durs = [];
+          (r.legs || []).forEach(function(l) {
+            (l.steps || []).forEach(function(st) { addRefDist(acc, st.ref, st.distance); });
+            if (l.annotation && l.annotation.duration) durs = durs.concat(l.annotation.duration);
+          });
+          return { geometry: r.geometry, time: r.duration, cumTime: cumTimeFromDurations(r.geometry.coordinates, durs), refDist: acc };
         }),
         routeEngine: 'OSRM'
       };
@@ -553,26 +583,29 @@ function getRoutes(o, d) {
         routes: rs.map(function(r, i) {
           var c = r.geometry.coordinates, dist = 0;
           for (var k = 1; k < c.length; k++) { dist += haversine(c[k-1][1], c[k-1][0], c[k][1], c[k][0]); }
-          return { geometry: r.geometry, dist: dist, time: r.time, label: labels[i] || null };
+          return { geometry: r.geometry, dist: dist, time: r.time, cumTime: r.cumTime, label: labels[i] || null };
         })
       };
     });
 }
 
-// Troca "Ponto N" pelo nome da cidade (Nominatim), só para a rota exibida
+// Troca "Ponto N" pelo nome da cidade, só para a rota exibida: Photon em paralelo;
+// os pontos que o Photon não resolver vão ao Nominatim, um por segundo
 function nameRoutePoints(dados) {
-  var chain = Promise.resolve();
-  for (var i = 1; i < dados.length - 1; i++) {
-    (function(idx) {
-      chain = chain.then(function() {
-        return reverseGeo(dados[idx].lat, dados[idx].lon).then(function(nm) {
-          if (nm) dados[idx].nome = nm;
-          return new Promise(function(r) { setTimeout(r, 350); });
+  var mid = dados.slice(1, -1);
+  return Promise.all(mid.map(function(p) { return reverseGeoPhoton(p.lat, p.lon); }))
+    .then(function(names) {
+      var chain = Promise.resolve(), first = true;
+      mid.forEach(function(p, i) {
+        if (names[i]) { p.nome = names[i]; return; }
+        chain = chain.then(function() {
+          var wait = first ? Promise.resolve() : new Promise(function(r) { setTimeout(r, 1100); });
+          first = false;
+          return wait.then(function() { return reverseGeoNominatim(p.lat, p.lon); }).then(function(nm) { if (nm) p.nome = nm; });
         });
       });
-    })(i);
-  }
-  return chain;
+      return chain;
+    });
 }
 
 function samplePoints(geo, n, oN, dN) {
@@ -583,7 +616,21 @@ function samplePoints(geo, n, oN, dN) {
   return pts;
 }
 
-function reverseGeo(lat, lon) {
+// Nome da cidade de um ponto via Photon (sem limite de 1 req/s, permite consultas em paralelo)
+function reverseGeoPhoton(lat, lon) {
+  return fetch('https://photon.komoot.io/reverse?lat=' + lat + '&lon=' + lon + '&limit=1')
+    .then(function(r) { if (!r.ok) return null; return r.json(); })
+    .then(function(d) {
+      var p = d && d.features && d.features[0] && d.features[0].properties;
+      if (!p) return null;
+      var placeTypes = ['city', 'town', 'village', 'municipality', 'locality'];
+      return p.city || (placeTypes.indexOf(p.type) > -1 ? p.name : null) || p.county || p.district || null;
+    })
+    .catch(function() { return null; });
+}
+
+// Fallback: Nominatim (política de uso: no máximo 1 req/s)
+function reverseGeoNominatim(lat, lon) {
   return fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json&zoom=10', { headers: { 'User-Agent': 'trajeto/1.0' } })
     .then(function(r) { if (!r.ok) return null; return r.json(); })
     .then(function(d) { if (!d || !d.address) return null; return d.address.city || d.address.town || d.address.municipality || d.address.village || null; })
@@ -602,10 +649,17 @@ function reverseGeoInput(lat, lon) {
     });
 }
 
-function estimateTimes(pts, geo, depH, spd) {
-  var c = geo.coordinates, cum = 0, dists = [0];
-  for (var i = 1; i < c.length; i++) { cum += haversine(c[i-1][1], c[i-1][0], c[i][1], c[i][0]); dists.push(cum); }
-  return pts.map(function(p) { return Object.assign({}, p, { hora: depH + ((dists[Math.min(p.idx, dists.length - 1)] || 0) / spd) }); });
+// Horário de passagem em cada ponto pelo tempo do roteador. Sem detalhe por trecho,
+// reparte o tempo total da rota proporcionalmente à distância.
+function estimateTimes(pts, route, depH) {
+  var c = route.geometry.coordinates, cumT = route.cumTime;
+  if (!cumT) {
+    var dists = [0];
+    for (var i = 1; i < c.length; i++) dists.push(dists[i-1] + haversine(c[i-1][1], c[i-1][0], c[i][1], c[i][0]));
+    var tot = dists[dists.length - 1] || 1;
+    cumT = dists.map(function(d) { return route.time * d / tot; });
+  }
+  return pts.map(function(p) { return Object.assign({}, p, { hora: depH + (cumT[Math.min(p.idx, cumT.length - 1)] || 0) / 3600 }); });
 }
 
 // Recebe uma lista de pontos por rota e faz uma única chamada ao Open-Meteo para todas
@@ -1081,7 +1135,6 @@ document.getElementById('route-form').addEventListener('submit', function(e) {
   var dQ = document.getElementById('destino').value.trim();
   var dt = document.getElementById('data').value;
   var hr = document.getElementById('hora').value;
-  var spd = parseInt(document.getElementById('velocidade').value) || 90;
   var depH = parseInt(hr.split(':')[0]) + parseInt(hr.split(':')[1]) / 60;
 
   if (!oQ || !dQ || !dt || !hr) { showErr('Preencha todos os campos'); return; }
@@ -1099,7 +1152,7 @@ document.getElementById('route-form').addEventListener('submit', function(e) {
         var ptsList = routes.map(function(route) {
           var nPts = Math.min(9, Math.max(3, Math.round(route.dist / 50)));
           var pts = samplePoints(route.geometry, nPts, orig.name, dest.name);
-          return estimateTimes(pts, route.geometry, depH, spd);
+          return estimateTimes(pts, route, depH);
         });
         showLoad('Consultando previsão de chuva...', 'Open-Meteo · ' + routes.length + (routes.length > 1 ? ' rotas' : ' rota'));
         return getWeather(ptsList, dt).then(function(dadosList) {
