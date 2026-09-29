@@ -42,7 +42,7 @@ Site estático, sem framework, sem build local.
 | Geocoding | Nominatim | Não incluir `countrycodes=br` para destinos internacionais; `User-Agent` obrigatório. "Cidade, UF" vai como busca estruturada (`city`/`state`): em texto livre "RJ" casa com rodovias (RJ-130). Priorizar resultados que sejam cidade |
 | Routing (primário) | GraphHopper | Até 3 rotas (`algorithm=alternative_route`); se recusado, repete sem alternativas. `details=street_ref` rotula a rota ("via BR-265") |
 | Routing (fallback) | OSRM | Semicolon-separated `lon,lat`; `geometries=geojson&overview=full&alternatives=3&steps=true` (`step.ref` rotula a rota) |
-| Nomes dos pontos da rota | Photon reverse (`photon.komoot.io/reverse`) | `layer=city&limit=5&radius=40`: município mais próximo que não repita origem, destino nem o ponto anterior. Consultas em paralelo; pontos sem nome caem no Nominatim reverse a 1 req/s |
+| Nomes dos pontos da rota | Photon reverse (`photon.komoot.io/reverse`) | Nome = município onde o ponto está (o ponto fica sempre sobre a rota). Consultas em paralelo; pontos sem nome caem no Nominatim reverse a 1 req/s |
 | Horários de passagem | Tempo do roteador | GraphHopper `details=time`; OSRM `annotations=duration`. Não há campo de velocidade no formulário |
 | Weather | Open-Meteo | Chave `precipitation` em mm; timezone `America/Sao_Paulo`; `precipitation_probability` pode estar ausente |
 | Mapa | Leaflet + OpenStreetMap tiles (padrão) / Esri World Street Map (alternativa) | Sem API key. Esri só carrega via controle de camadas ou fallback se o OSM falhar. CARTO descartado: passou a exigir API key |
