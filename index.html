@@ -447,10 +447,22 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// Quando o 1º resultado é o limite do município, lat/lon é o centroide do polígono, que pode
+// ficar a quilômetros da cidade (ex.: Teresópolis). Prefere o nó place=city/town dentro dele.
 function geocode(q) {
-  return fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1', { headers: { 'User-Agent': 'trajeto/1.0' } })
+  return fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=5', { headers: { 'User-Agent': 'trajeto/1.0' } })
     .then(function(r) { if (!r.ok) throw new Error('Geocoding falhou'); return r.json(); })
-    .then(function(d) { if (!d.length) throw new Error('Local nao encontrado: ' + q); return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon), name: d[0].display_name.split(',')[0] }; });
+    .then(function(d) {
+      if (!d.length) throw new Error('Local nao encontrado: ' + q);
+      var best = d[0], bb = best.boundingbox;
+      if (best.class !== 'place' && bb) {
+        var settle = ['city', 'town', 'village', 'municipality'];
+        var inBox = function(x) { var la = parseFloat(x.lat), lo = parseFloat(x.lon); return la >= +bb[0] && la <= +bb[1] && lo >= +bb[2] && lo <= +bb[3]; };
+        var node = d.filter(function(x) { return x.class === 'place' && settle.indexOf(x.type) > -1 && x.name === best.name && inBox(x); })[0];
+        if (node) best = node;
+      }
+      return { lat: parseFloat(best.lat), lon: parseFloat(best.lon), name: best.display_name.split(',')[0] };
+    });
 }
 
 // Soma a distância percorrida em cada rodovia (ex.: {'BR-265': 180000}) para rotular a rota
@@ -600,14 +612,25 @@ function nameRoutePoints(dados) {
           return wait.then(function() { return reverseGeoNominatim(p.lat, p.lon); }).then(function(nm) { if (nm) p.nome = nm; });
         });
       });
-      return chain;
+      return chain.then(function() { dedupeNames(dados); });
     });
+}
+
+// Pontos no mesmo município repetiriam o nome (ex.: dois "Teresópolis"): marca o km da rota
+function dedupeNames(dados) {
+  var dN = dados[dados.length - 1].nome;
+  for (var i = 1; i < dados.length - 1; i++) {
+    var p = dados[i], prev = dados[i - 1].nome.split(' \u00b7 km')[0];
+    if (p.nome === prev || p.nome === dN) p.nome += ' \u00b7 km ' + Math.round(p.km);
+  }
 }
 
 function samplePoints(geo, n, oN, dN) {
   var c = geo.coordinates, pts = [], tot = c.length, step = Math.max(1, Math.floor(tot / (n + 1)));
-  pts.push({ lat: c[0][1], lon: c[0][0], nome: oN, idx: 0 });
-  for (var i = 1; i <= n; i++) { var ci = Math.min(i * step, tot - 1); pts.push({ lat: c[ci][1], lon: c[ci][0], nome: 'Ponto ' + i, idx: ci }); }
+  var km = [0];
+  for (var j = 1; j < tot; j++) km.push(km[j-1] + haversine(c[j-1][1], c[j-1][0], c[j][1], c[j][0]));
+  pts.push({ lat: c[0][1], lon: c[0][0], nome: oN, idx: 0, km: 0 });
+  for (var i = 1; i <= n; i++) { var ci = Math.min(i * step, tot - 1); pts.push({ lat: c[ci][1], lon: c[ci][0], nome: 'Ponto ' + i, idx: ci, km: km[ci] }); }
   pts.push({ lat: c[tot-1][1], lon: c[tot-1][0], nome: dN, idx: tot - 1 });
   return pts;
 }
