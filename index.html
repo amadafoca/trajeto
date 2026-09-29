@@ -405,7 +405,7 @@ a { color: var(--accent); text-decoration: none; }
       </a>
     </div>
   </div>
-  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 0c2a23e</span>
+  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build d54fd8b</span>
 </div>
 
 <div class="loading-overlay" id="loading" style="display:none">
@@ -641,7 +641,7 @@ function brandFooterHtml() {
         '</a>' +
       '</div>' +
     '</div>' +
-    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 0c2a23e</span>';
+    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build d54fd8b</span>';
 }
 
 function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoord, dCoord) {
@@ -784,8 +784,13 @@ function buildResults(dados, routeGeo, oN, dN, date, hora, km, routeEngine, oCoo
   });
 
   var map = L.map('map');
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '\u00a9 OSM \u00a9 CARTO', subdomains: 'abcd', maxZoom: 19
+  // Esri Dark Gray Canvas: sem API key (CARTO passou a exigir chave)
+  var esriBase = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+  L.tileLayer(esriBase + 'World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles \u00a9 Esri \u2014 Esri, HERE, Garmin, \u00a9 OSM', maxZoom: 16
+  }).addTo(map);
+  L.tileLayer(esriBase + 'World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 16
   }).addTo(map);
 
   if (routeGeo) {
