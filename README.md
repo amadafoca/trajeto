@@ -7,7 +7,7 @@ Informe origem, destino, data, horário e velocidade média — o app calcula a 
 ## Stack
 
 - **Frontend:** Vanilla HTML/CSS/JS (zero framework)
-- **Mapa:** Leaflet.js + OpenStreetMap (Esri Dark Gray Canvas tiles)
+- **Mapa:** Leaflet.js + OpenStreetMap (tiles OSM padrão, com Esri World Street Map como alternativa)
 - **Roteamento:** GraphHopper (primário, com API key) + OSRM (fallback público)
 - **Autocomplete:** Photon API (photon.komoot.io)
 - **Geocoding:** Nominatim (geocoding e reverse geocoding)
@@ -68,4 +68,5 @@ trajeto/
 | Photon | Autocomplete de cidades | Público, sem chave |
 | Nominatim | Geocoding e reverse geocoding | 1 req/s |
 | Open-Meteo | Previsão hora a hora | Gratuito (non-commercial) |
-| Esri (ArcGIS) | Tiles do mapa | Gratuito, sem API key |
+| OpenStreetMap | Tiles do mapa (padrão) | Gratuito, sem API key |
+| Esri (ArcGIS) | Tiles do mapa (alternativa/fallback) | Gratuito, sem API key |
