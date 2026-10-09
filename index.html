@@ -473,18 +473,36 @@ function pickSettlement(d) {
   return best;
 }
 
+// Centro urbano via Open-Meteo Geocoding (GeoNames). No Nominatim o município pode vir com
+// lat/lon no centroide do polígono, longe da cidade (Teresópolis: ~15 km a nordeste)
+function semAcento(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
+function geocodeCentroBR(cidade, estado) {
+  return fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(cidade) + '&count=10&language=pt&countryCode=BR')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) {
+      var hit = (d && d.results || []).filter(function(x) {
+        return /^PPL/.test(x.feature_code || '') && semAcento(x.name) === semAcento(cidade) && (!estado || semAcento(x.admin1) === semAcento(estado));
+      })[0];
+      return hit ? { lat: hit.latitude, lon: hit.longitude } : null;
+    })
+    .catch(function() { return null; });
+}
+
 function geocode(q) {
   var get = function(url) {
     return fetch(url, { headers: { 'User-Agent': 'trajeto/1.0' } })
       .then(function(r) { if (!r.ok) throw new Error('Geocoding falhou'); return r.json(); });
   };
-  var url = geocodeUrl(q), free = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&q=' + encodeURIComponent(q);
+  var url = geocodeUrl(q) + '&addressdetails=1', free = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&addressdetails=1&q=' + encodeURIComponent(q);
   return get(url)
     .then(function(d) { return d.length || url === free ? d : get(free); })
     .then(function(d) {
       if (!d.length) throw new Error('Local nao encontrado: ' + q);
-      var best = pickSettlement(d);
-      return { lat: parseFloat(best.lat), lon: parseFloat(best.lon), name: best.name || best.display_name.split(',')[0] };
+      var best = pickSettlement(d), a = best.address || {};
+      var res = { lat: parseFloat(best.lat), lon: parseFloat(best.lon), name: best.name || best.display_name.split(',')[0] };
+      // Cidade brasileira: troca lat/lon pelo centro urbano, se o Open-Meteo achar a mesma cidade no mesmo estado
+      if (a.country_code !== 'br') return res;
+      return geocodeCentroBR(res.name, a.state).then(function(c) { return c ? Object.assign(res, c) : res; });
     });
 }
 
