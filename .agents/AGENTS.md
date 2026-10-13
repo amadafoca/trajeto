@@ -40,8 +40,9 @@ Site estático, sem framework, sem build local.
 | Hosting | GitHub Pages | Branch `gh-pages`, deploy via GitHub Actions |
 | Autocomplete | Photon API (`photon.komoot.io`) | `lang=pt` não funciona no public instance; filtrar client-side com `countrycode === 'BR'` (sem underscore) |
 | Geocoding | Nominatim | Não incluir `countrycodes=br` para destinos internacionais; `User-Agent` obrigatório. "Cidade, UF" vai como busca estruturada (`city`/`state`): em texto livre "RJ" casa com rodovias (RJ-130). Priorizar resultados que sejam cidade. Cidade no Brasil: lat/lon do centro urbano via Open-Meteo Geocoding (GeoNames, mesmo nome e estado), pois o Nominatim pode devolver o centroide do município |
-| Routing (primário) | GraphHopper | Até 3 rotas (`algorithm=alternative_route`); se recusado, repete sem alternativas. `details=street_ref` rotula a rota ("via BR-265") |
+| Routing (primário) | GraphHopper | Até 3 rotas (`algorithm=alternative_route`); se recusado, repete sem alternativas. `details=street_ref` rotula a rota ("via BR-265"). Evita terra: tenta antes um POST com `custom_model` (prioridade 0.05 em vias sem pavimento) e, em qualquer caso, ordena as rotas por tempo + 3 min/km de terra (`details=surface`) |
 | Routing (fallback) | OSRM | Semicolon-separated `lon,lat`; `geometries=geojson&overview=full&alternatives=3&steps=true` (`step.ref` rotula a rota) |
+| Pontos da rota | — | Espaçados por distância (não por vértice, senão se amontoam nas serras). Ponto no mesmo município do anterior ou do destino sai da lista |
 | Nomes dos pontos da rota | Photon reverse (`photon.komoot.io/reverse`) | Nome = município onde o ponto está (o ponto fica sempre sobre a rota). Consultas em paralelo; pontos sem nome caem no Nominatim reverse a 1 req/s |
 | Horários de passagem | Tempo do roteador | GraphHopper `details=time`; OSRM `annotations=duration`. Não há campo de velocidade no formulário |
 | Weather | Open-Meteo | Chave `precipitation` em mm; timezone `America/Sao_Paulo`; `precipitation_probability` pode estar ausente |

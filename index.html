@@ -525,6 +525,22 @@ function refDistFromIntervals(coords, intervals) {
   return acc;
 }
 
+// Pavimentos que o GraphHopper (details=surface) considera sem asfalto
+var UNPAVED = ['unpaved', 'compacted', 'fine_gravel', 'gravel', 'ground', 'dirt', 'grass', 'sand'];
+
+function unpavedFromIntervals(coords, intervals) {
+  var m = 0;
+  intervals.forEach(function(iv) {
+    if (UNPAVED.indexOf(String(iv[2]).toLowerCase()) < 0) return;
+    for (var i = iv[0] + 1; i <= iv[1] && i < coords.length; i++) m += haversine(coords[i-1][1], coords[i-1][0], coords[i][1], coords[i][0]) * 1000;
+  });
+  return m;
+}
+
+// Custo para ordenar as rotas: tempo + 3 min por km de terra. A rota exibida primeiro
+// é a mais rápida entre as pavimentadas, não a mais curta por estrada de terra
+function routeCost(r) { return r.time + (r.unpavedM || 0) / 1000 * 180; }
+
 // Tempo acumulado (s) do início da rota até cada coordenada, segundo o roteador.
 // GraphHopper: details=time dá [de, até, ms] por trecho; o tempo é distribuído pela distância dentro do trecho.
 function cumTimeFromIntervals(coords, intervals) {
@@ -553,13 +569,25 @@ function cumTimeFromDurations(coords, durs) {
 
 async function fetchRoutes(origin, destination) {
   var ghBase = 'https://graphhopper.com/api/1/route?point=' + origin.lat + ',' + origin.lng + '&point=' + destination.lat + ',' + destination.lng + '&profile=car&locale=pt_BR&points_encoded=false&details=street_ref&details=time&key=3b6f83cd-cc7e-4003-b433-fa5425570bc2';
+  ghBase += '&details=surface';
   var ghAlt = ghBase + '&algorithm=alternative_route&alternative_route.max_paths=3';
+  // POST com custom model: derruba a prioridade de vias sem pavimento (o perfil car padrão não as evita)
+  var ghPost = {
+    url: 'https://graphhopper.com/api/1/route?key=3b6f83cd-cc7e-4003-b433-fa5425570bc2',
+    body: {
+      points: [[origin.lng, origin.lat], [destination.lng, destination.lat]],
+      profile: 'car', locale: 'pt_BR', points_encoded: false,
+      details: ['street_ref', 'time', 'surface'],
+      algorithm: 'alternative_route', 'alternative_route.max_paths': 3,
+      custom_model: { priority: [{ if: UNPAVED.map(function(x) { return 'surface == ' + x.toUpperCase(); }).join(' || '), multiply_by: '0.05' }] }
+    }
+  };
   var osrmUrl = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' + origin.lng + ',' + origin.lat + ';' + destination.lng + ',' + destination.lat + '?overview=full&geometries=geojson&alternatives=3&steps=true&annotations=duration';
   function raceTimeout(promise, ms) {
     return Promise.race([promise, new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Timeout')); }, ms); })]);
   }
-  async function tryGh(url) {
-    var ghRes = await raceTimeout(fetch(url), 8000);
+  async function tryGh(url, post) {
+    var ghRes = await raceTimeout(post ? fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(post) }) : fetch(url), post ? 10000 : 8000);
     if (!ghRes.ok) { var ghBody = await ghRes.text().catch(function() { return ''; }); throw new Error('HTTP ' + ghRes.status + (ghBody.indexOf('message') > -1 ? ' — ' + (JSON.parse(ghBody).message || '').slice(0, 80) : '')); }
     var ghData = await ghRes.json();
     if (!ghData.paths || !ghData.paths.length) throw new Error('Sem rota');
@@ -568,14 +596,21 @@ async function fetchRoutes(origin, destination) {
         geometry: p.points,
         time: p.time / 1000,
         cumTime: cumTimeFromIntervals(p.points.coordinates, (p.details && p.details.time) || []),
-        refDist: refDistFromIntervals(p.points.coordinates, (p.details && p.details.street_ref) || [])
+        refDist: refDistFromIntervals(p.points.coordinates, (p.details && p.details.street_ref) || []),
+        unpavedM: unpavedFromIntervals(p.points.coordinates, (p.details && p.details.surface) || [])
       };
-    });
+    }).sort(function(a, b) { return routeCost(a) - routeCost(b); });
   }
   var ghErr, osrmErr;
   try {
     var ghRoutes;
     try {
+      ghRoutes = await tryGh(ghPost.url, ghPost.body);
+    } catch (eCm) {
+      // Plano sem custom model (ou erro/timeout): segue com o GET padrão
+      ghRoutes = null;
+    }
+    if (!ghRoutes) try {
       ghRoutes = await tryGh(ghAlt);
     } catch (eAlt) {
       // Se o plano/servidor recusar rotas alternativas, tenta a rota única
@@ -653,14 +688,29 @@ function nameRoutePoints(dados) {
           return wait.then(function() { return reverseGeoNominatim(p.lat, p.lon); }).then(function(nm) { if (nm) p.nome = nm; });
         });
       });
-      return chain;
+      return chain.then(function() { dropRepeated(dados); });
     });
 }
 
+// Um ponto no mesmo município do ponto anterior (ou do destino) não acrescenta informação
+// ao trajeto: sai da lista. Altera o array no lugar (é o mesmo usado pelo mapa e pelos cartões)
+function dropRepeated(dados) {
+  var dN = dados[dados.length - 1].nome;
+  for (var i = dados.length - 2; i >= 1; i--) {
+    if (dados[i].nome === dados[i - 1].nome || (dados[i].nome === dN && i === dados.length - 2)) dados.splice(i, 1);
+  }
+}
+
+// Pontos igualmente espaçados em km (por índice, se amontoariam nas serras, onde a linha tem mais vértices)
 function samplePoints(geo, n, oN, dN) {
-  var c = geo.coordinates, pts = [], tot = c.length, step = Math.max(1, Math.floor(tot / (n + 1)));
+  var c = geo.coordinates, pts = [], tot = c.length, km = [0];
+  for (var j = 1; j < tot; j++) km.push(km[j-1] + haversine(c[j-1][1], c[j-1][0], c[j][1], c[j][0]));
   pts.push({ lat: c[0][1], lon: c[0][0], nome: oN, idx: 0 });
-  for (var i = 1; i <= n; i++) { var ci = Math.min(i * step, tot - 1); pts.push({ lat: c[ci][1], lon: c[ci][0], nome: 'Ponto ' + i, idx: ci }); }
+  for (var i = 1, ci = 0; i <= n; i++) {
+    var alvo = km[tot - 1] * i / (n + 1);
+    while (ci < tot - 1 && km[ci] < alvo) ci++;
+    pts.push({ lat: c[ci][1], lon: c[ci][0], nome: 'Ponto ' + i, idx: ci });
+  }
   pts.push({ lat: c[tot-1][1], lon: c[tot-1][0], nome: dN, idx: tot - 1 });
   return pts;
 }
