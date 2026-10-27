@@ -96,6 +96,22 @@
     .stay-list li{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.45);display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
     .stay-list a{display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--forest);font-size:14px}.stay-list a:hover strong{text-decoration:underline}
     .stay-list svg{width:14px;height:14px;flex:none}.stay-list span{font-size:13px;color:var(--muted)}
+    .day-weather{border-top:1px solid var(--line);padding:22px 30px 24px;background:#f7f4ec}
+    .weather-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+    .weather-head h4{margin:0;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--clay)}
+    .weather-head span{font-size:11px;color:var(--muted)}.weather-head a{color:inherit}
+    .weather-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
+    .wx{border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.6);padding:12px 12px 13px;display:flex;flex-direction:column;gap:3px}
+    .wx-time{font-size:11px;font-weight:700;color:var(--clay);letter-spacing:.06em}
+    .wx-place{font-size:12px;line-height:1.3;color:#465149;min-height:2.6em}
+    .wx-main{display:flex;align-items:center;gap:6px;margin-top:4px}.wx-icon{font-size:22px;line-height:1}
+    .wx-temp{font-size:22px;font-weight:700;color:var(--ink)}
+    .wx-desc{font-size:11px;color:var(--muted)}
+    .wx-rain{font-size:12px;color:#2f5f86;font-weight:600}
+    .wx-night{font-size:11px;color:#465149;margin-top:2px}
+    .weather-note{margin:12px 0 0;font-size:11px;color:var(--muted);line-height:1.5}
+    @media(max-width:640px){.day-weather{padding:18px 20px 20px}.weather-grid{grid-template-columns:1fr 1fr}}
+
     @media(max-width:640px){.day-toggle{padding:14px 20px}.day-details{padding:22px 20px 24px}}
 
   </style>
@@ -126,5 +142,42 @@
 <section class="section route-section" id="rota"><div class="shell"><div class="section-title-wrap reveal"><div><div class="eyebrow" style="color:#efcf8d">A travessia</div><h2>O fio da viagem.</h2></div><p class="section-intro">Uma leitura visual do circuito: a cada dia a viagem avança por um setor diferente da Canastra, alternando grandes deslocamentos e trechos em que vale desacelerar.</p></div><div class="route-board reveal"><div class="route-map"><svg viewBox="0 0 760 430" aria-label="Diagrama esquemático do roteiro"><path d="M90 340 C175 305 190 250 270 270 S360 330 430 258 S520 175 610 192 S690 138 705 90" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="18" stroke-linecap="round"/><path d="M90 340 C175 305 190 250 270 270 S360 330 430 258 S520 175 610 192 S690 138 705 90" fill="none" stroke="#e3c47f" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 13"/><g fill="#fbf8f1" stroke="#183b2d" stroke-width="4"><circle cx="90" cy="340" r="10"/><circle cx="270" cy="270" r="10"/><circle cx="430" cy="258" r="10"/><circle cx="610" cy="192" r="10"/><circle cx="705" cy="90" r="10"/></g><g font-family="DM Sans, sans-serif" fill="#fff"><text x="60" y="375" font-size="14" font-weight="700">Glória</text><text x="226" y="240" font-size="14" font-weight="700">Vale da Gurita</text><text x="396" y="300" font-size="14" font-weight="700">Fundão</text><text x="560" y="225" font-size="14" font-weight="700">Casca d'Anta</text><text x="640" y="65" font-size="14" font-weight="700">Serra Branca</text></g><g opacity=".14" fill="none" stroke="#fff"><path d="M10 105 C120 45 215 85 310 62 S530 50 720 25"/><path d="M15 155 C135 100 230 130 325 112 S540 98 735 75"/><path d="M10 205 C145 150 240 190 340 165 S570 148 750 120"/></g></svg></div><div class="legend"><div class="legend-item"><small>Dia 2</small><strong>99 km</strong><p>Caminho do Céu e descida para o Vale da Gurita.</p></div><div class="legend-item"><small>Dia 3</small><strong>185 km</strong><p>O trecho mais longo, com Fundão como destino central.</p></div><div class="legend-item"><small>Dia 4</small><strong>118 km</strong><p>Parque, gastronomia local e camping no alto da serra.</p></div><div class="legend-item"><small>Dia 5</small><strong>47 km + retorno</strong><p>Descida da Serra Branca e estrada de volta ao Rio.</p></div></div></div></div></section>
   </main>
 <footer><div class="shell footer-inner"><div><h2 class="footer-title">Expedição Canastra 2026</h2><div class="footer-muted">29 de outubro a 2 de novembro de 2026 · Serra da Canastra, Minas Gerais</div></div><div class="footer-muted">*~1.800 km = total aproximado com ida e volta do Rio de Janeiro; 449 km = soma dos trechos dentro da Canastra.</div></div></footer>
-<script>const obs=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}})},{threshold:.08});document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));document.querySelectorAll('.day-card.expandable').forEach(card=>{const btn=card.querySelector('.day-toggle');const panel=card.querySelector('.day-details');const toggle=()=>{const open=btn.getAttribute('aria-expanded')!=='true';btn.setAttribute('aria-expanded',open);panel.hidden=!open;btn.querySelector('span').textContent=open?'Ocultar detalhes do dia':'Ver detalhes do dia · 6 pontos'};card.querySelectorAll('img[data-src-from]').forEach(img=>{const src=card.querySelector(img.dataset.srcFrom);if(src)img.src=src.src});btn.addEventListener('click',toggle);card.querySelector('.day-head').addEventListener('click',toggle)});document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{const id=a.getAttribute('href');const el=document.querySelector(id);if(el){e.preventDefault();window.scrollTo({top:el.offsetTop-62,behavior:'smooth'})}})});</script>
+<script>const obs=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}})},{threshold:.08});document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));document.querySelectorAll('.day-card.expandable').forEach(card=>{const btn=card.querySelector('.day-toggle');const panel=card.querySelector('.day-details');const toggle=()=>{const open=btn.getAttribute('aria-expanded')!=='true';btn.setAttribute('aria-expanded',open);panel.hidden=!open;btn.querySelector('span').textContent=open?'Ocultar detalhes do dia':'Ver detalhes do dia · 6 pontos'};card.querySelectorAll('img[data-src-from]').forEach(img=>{const src=card.querySelector(img.dataset.srcFrom);if(src)img.src=src.src});btn.addEventListener('click',toggle);card.querySelector('.day-head').addEventListener('click',toggle)});document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{const id=a.getAttribute('href');const el=document.querySelector(id);if(el){e.preventDefault();window.scrollTo({top:el.offsetTop-62,behavior:'smooth'})}})});
+// Previsão do tempo por ponto e horário estimado (Open-Meteo, carregada ao abrir a página)
+(()=>{
+  const DAYS=[
+    {date:'2026-10-29',pts:[['06h','Rio de Janeiro',-22.9068,-43.1729,6],['17h','São João Batista do Glória',-20.6410757,-46.5056177,17,'pernoite']]},
+    {date:'2026-10-30',pts:[['08h','Mirante da Serra Calçada',-20.4618648,-46.5051788,8],['10h','Cachoeira do Encanto',-20.4107389,-46.5503084,10],['13h','Mirante do Caminho do Céu',-20.3836455,-46.6357475,13],['15h','Complexo dos Palmitos',-20.3331954,-46.6484493,15],['18h','Vale da Gurita',-20.310459,-46.7643738,18,'pernoite']]},
+    {date:'2026-10-31',pts:[['09h','Cachoeira João Inácio',-20.0750797,-46.9826701,9],['12h','Cachoeira da Parida',-20.098936,-46.8461836,12],['15h','Cachoeira do Fundão',-20.1751393,-46.6023885,15],['18h','Magic Bus',-20.1388033,-46.6175219,18,'pernoite']]},
+    {date:'2026-11-01',pts:[['09h','Casca d\'Anta · parte alta',-20.2729956,-46.5337775,9],['11h','Nascente do São Francisco',-20.234216,-46.4417131,11],['14h','Casca d\'Anta · parte baixa',-20.3133675,-46.5279408,14],['18h','Mirante da Serra Branca',-20.3852909,-46.574404,18,'pernoite']]},
+    {date:'2026-11-02',pts:[['08h','Serra Branca',-20.3852909,-46.574404,8],['11h','São João Batista do Glória',-20.6410757,-46.5056177,11],['19h','Rio de Janeiro',-22.9068,-43.1729,19]]}
+  ];
+  const WMO={0:['☀️','Céu limpo'],1:['🌤️','Poucas nuvens'],2:['⛅','Parcialmente nublado'],3:['☁️','Nublado'],45:['🌫️','Neblina'],48:['🌫️','Neblina'],51:['🌦️','Garoa fraca'],53:['🌦️','Garoa'],55:['🌧️','Garoa forte'],56:['🌧️','Garoa'],57:['🌧️','Garoa'],61:['🌧️','Chuva fraca'],63:['🌧️','Chuva'],65:['🌧️','Chuva forte'],66:['🌧️','Chuva'],67:['🌧️','Chuva forte'],80:['🌦️','Pancadas fracas'],81:['🌧️','Pancadas de chuva'],82:['⛈️','Pancadas fortes'],95:['⛈️','Trovoadas'],96:['⛈️','Trovoadas c/ granizo'],99:['⛈️','Trovoadas c/ granizo']};
+  const cards=document.querySelectorAll('.day-card');
+  const boxes=DAYS.map((d,i)=>{const el=document.createElement('section');el.className='day-weather';el.innerHTML='<div class="weather-head"><h4>Previsão do tempo</h4><span>Carregando…</span></div>';cards[i]&&cards[i].querySelector('.day-body').after(el);return el});
+  const all=DAYS.flatMap(d=>d.pts);
+  const q=new URLSearchParams({latitude:all.map(p=>p[2]).join(','),longitude:all.map(p=>p[3]).join(','),hourly:'temperature_2m,precipitation_probability,precipitation,weather_code',timezone:'America/Sao_Paulo',start_date:DAYS[0].date,end_date:'2026-11-03'});
+  const fmt=n=>n.toLocaleString('pt-BR',{maximumFractionDigits:1});
+  const fail=msg=>boxes.forEach(b=>{b.querySelector('.weather-head span').textContent=msg});
+  const daysAhead=(Date.parse(DAYS[0].date+'T00:00:00-03:00')-Date.now())/864e5;
+  if(daysAhead>15){const d=new Date(Date.parse(DAYS[0].date+'T12:00:00-03:00')-15*864e5);fail('Disponível a partir de '+d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}));return}
+  fetch('https://api.open-meteo.com/v1/forecast?'+q).then(r=>{if(!r.ok)throw r;return r.json()}).then(res=>{
+    const list=Array.isArray(res)?res:[res];let k=0;
+    const now=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    DAYS.forEach((d,i)=>{
+      const items=d.pts.map(p=>{
+        const h=list[k++].hourly,idx=h.time.indexOf(d.date+'T'+String(p[4]).padStart(2,'0')+':00');
+        if(idx<0)return '';
+        const code=h.weather_code[idx],night=p[4]>=18||p[4]<6;let [ic,desc]=WMO[code]||['🌡️',''];
+        if(night&&code<=1)ic='🌙';
+        const prob=h.precipitation_probability&&h.precipitation_probability[idx],mm=h.precipitation[idx];
+        let extra='';
+        if(p[5]==='pernoite'){const t=h.temperature_2m.slice(idx+2,idx+13).filter(v=>v!=null);if(t.length)extra='<div class="wx-night">Madrugada: mín '+Math.round(Math.min(...t))+'°C</div>'}
+        return '<li class="wx"><div class="wx-time">'+p[0]+(p[5]?' · '+p[5]:'')+'</div><div class="wx-place">'+p[1]+'</div><div class="wx-main"><span class="wx-icon" aria-hidden="true">'+ic+'</span><span class="wx-temp">'+Math.round(h.temperature_2m[idx])+'°</span></div><div class="wx-desc">'+desc+'</div><div class="wx-rain">💧 '+(prob!=null?prob+'% · ':'')+fmt(mm)+' mm</div>'+extra+'</li>';
+      }).join('');
+      boxes[i].innerHTML='<div class="weather-head"><h4>Previsão do tempo</h4><span>Atualizada às '+now+' · <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></span></div><ul class="weather-grid">'+items+'</ul><p class="weather-note">Horários estimados de passagem. A previsão considera a altitude de cada ponto e muda até a data; recarregue a página para atualizar.</p>';
+    });
+  }).catch(()=>fail('Não foi possível carregar a previsão agora.'));
+})();
+</script>
 </body></html>
