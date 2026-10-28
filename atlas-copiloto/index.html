@@ -2216,10 +2216,11 @@ const PRESETS = {
   at1100:{make:'Honda', model:'CRF1100L Africa Twin', type:'adv', fuel:'gas', ron:91, tank:18.8, kml:20},
   ktm890:{make:'KTM', model:'890 Adventure', type:'adv', fuel:'gas', ron:95, tank:20, kml:18},
   xre300:{make:'Honda', model:'XRE 300 Sahara', type:'trail', fuel:'flex', ron:91, tank:13.8, kml:28},
-  hilux:{make:'Toyota', model:'Hilux 2.8 diesel', type:'x4', fuel:'diesel', ron:0, tank:80, kml:10}
+  hilux:{make:'Toyota', model:'Hilux 2.8 diesel', type:'x4', fuel:'diesel', ron:0, tank:80, kml:10},
+  bronco:{make:'Ford', model:'Bronco Sport 2.0 EcoBoost', type:'x4', fuel:'gas', ron:91, tank:60, kml:9}
 };
 const MOTO_TYPES = ['adv','trail','street'];
-function myVeh(){ const v = store.get('myveh', null); return v || {...PRESETS.hilux, extra:0, year:'', tips:[], preset:'hilux'}; }
+function myVeh(){ const v = store.get('myveh', null); return v || {...PRESETS.bronco, extra:0, year:'', tips:[], preset:'bronco'}; }
 function saveVeh(v){ store.set('myveh', v); store.set('vehicle', v.type); }
 function vehName(v){ return [v.make, v.model].filter(Boolean).join(' ') || tr('v_'+v.type); }
 function terrainFactor(d){ const s=surfOf(d); let f=1; if(s.includes('ripio')||s.includes('pedras')) f=1.12; if(s.includes('areia')||s.includes('off')||s.includes('sal')) f=1.3; if(maxAlt(d)>=3500) f*=1.05; return f; }
@@ -2492,10 +2493,12 @@ function garage(){
   let g=store.get('garage',null);
   if(!Array.isArray(g)||!g.length){
     const old=store.get('myveh',null);
-    g=[{id:'v1', ...PRESETS.hilux, extra:0, year:'', tips:[], preset:'hilux'}];
+    g=[{id:'v1', ...PRESETS.bronco, extra:0, year:'', tips:[], preset:'bronco'}];
     if(old){ old.id='v0'; g.unshift(old); }
     store.set('garage',g); store.set('vehId',g[0].id);
   }
+  const h=PRESETS.hilux, i=g.findIndex(v=>v.id==='v1' && v.preset==='hilux' && v.make===h.make && v.model===h.model && v.tank===h.tank && v.kml===h.kml && !v.year && !(v.tips||[]).length);
+  if(i>=0){ g[i]={id:'v1', ...PRESETS.bronco, extra:0, year:'', tips:[], preset:'bronco'}; store.set('garage',g); }
   return g;
 }
 myVeh = function(){ const g=garage(), id=store.get('vehId',null); return g.find(v=>v.id===id)||g[0]; };
