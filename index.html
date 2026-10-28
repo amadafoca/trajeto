@@ -6,6 +6,18 @@
 <title>Trajeto</title>
 <meta name="description" content="Previsão de chuva hora a hora para suas viagens">
 <meta name="theme-color" content="#09111d">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Trajeto">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="https://trajetoapp.com.br/">
+<meta property="og:title" content="Trajeto">
+<meta property="og:description" content="Previsão de chuva hora a hora para suas viagens">
+<meta property="og:image" content="https://trajetoapp.com.br/assets/v0/trajeto-favicon-512.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="Ícone do Trajeto">
+<meta name="twitter:card" content="summary">
 <meta name="apple-mobile-web-app-title" content="Trajeto">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-00HNT6RM7D"></script>
@@ -411,7 +423,7 @@ a { color: var(--accent); text-decoration: none; }
       </a>
     </div>
   </div>
-  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build bffeedd</span>
+  <span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 751a746</span>
 </div>
 
 <div class="loading-overlay" id="loading" style="display:none">
@@ -774,7 +786,7 @@ function genWhatsApp(dados, oN, dN, date, hora, km, shareUrl, via) {
     t += horaStr(p.hora) + ' ' + p.nome + ' \u2192 *' + p.mm.toFixed(1) + 'mm* ' + c.tag.toLowerCase() + '\n';
   });
   t += '\n_Dados: Open-Meteo (GFS) \u2022 ' + new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '_';
-  t += '\n_Criado em Trajeto: https://trajetoapp.com.br/_';
+  t += '\n_Criado em Trajeto:_ https://trajetoapp.com.br/';
   if (shareUrl) t += '\n\n\ud83d\udd17 Veja o trajeto completo:\n' + shareUrl;
   return t;
 }
@@ -854,7 +866,7 @@ function brandFooterHtml() {
         '</a>' +
       '</div>' +
     '</div>' +
-    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build bffeedd</span>';
+    '<span id="version" style="font-size:0.65rem;opacity:0.35;text-align:center;letter-spacing:0.05em;display:block;margin-top:1.5rem;">build 751a746</span>';
 }
 
 // res: { routes: [{ geometry, dist, time, label, dados, named }], oN, dN, date, hora, routeEngine, oCoord, dCoord }
@@ -993,7 +1005,7 @@ function buildResults(res, sel) {
     }
     var fullWt = genWhatsApp(dados, oN, dN, date, hora, km, shareUrl, via);
     if (navigator.share) {
-      try { await navigator.share({ title: 'Previsão de Chuva \u2014 ' + oN + ' \u2192 ' + dN, text: fullWt }); } catch (e) {}
+      try { await navigator.share({ text: fullWt }); } catch (e) {}
     } else {
       window.open('https://wa.me/?text=' + encodeURIComponent(fullWt), '_blank');
     }
