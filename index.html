@@ -774,7 +774,7 @@ function genWhatsApp(dados, oN, dN, date, hora, km, shareUrl, via) {
     t += horaStr(p.hora) + ' ' + p.nome + ' \u2192 *' + p.mm.toFixed(1) + 'mm* ' + c.tag.toLowerCase() + '\n';
   });
   t += '\n_Dados: Open-Meteo (GFS) \u2022 ' + new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '_';
-  t += '\n_Criado em Trajeto: https://trajetoapp.com.br/_';
+  t += '\n_Criado em Trajeto:_ https://trajetoapp.com.br/';
   if (shareUrl) t += '\n\n\ud83d\udd17 Veja o trajeto completo:\n' + shareUrl;
   return t;
 }
@@ -993,7 +993,7 @@ function buildResults(res, sel) {
     }
     var fullWt = genWhatsApp(dados, oN, dN, date, hora, km, shareUrl, via);
     if (navigator.share) {
-      try { await navigator.share({ title: 'Previsão de Chuva \u2014 ' + oN + ' \u2192 ' + dN, text: fullWt }); } catch (e) {}
+      try { await navigator.share({ text: fullWt }); } catch (e) {}
     } else {
       window.open('https://wa.me/?text=' + encodeURIComponent(fullWt), '_blank');
     }
