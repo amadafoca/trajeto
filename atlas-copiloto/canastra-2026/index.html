@@ -2974,7 +2974,7 @@ function wireChat(){
 
 /* Suggested time at each place: fit the planned days, favouring places travellers rate highly */
 const STAY_SCORE={};
-const STAY_WORDS=/parque|nacional|laguna|lago|salar|catarat|cachoeira|termas?|valle|vale\b|quebrada|glaciar|geleira|vulc|desierto|deserto|praia|playa|ilha|isla|chapada|c[aâ]nion|canyon|serra|sierra|cusco|machu|atacama|uyuni|bariloche|ushuaia|calafate|chalt[eé]n|iguaz|igua[çc]u|mendoza|salta|cafayate/i;
+const STAY_WORDS=/parque|nacional|laguna|lago|salar|catarat|cachoeira|termas?|valle|vale\b|quebrada|glaciar|geleira|vulc|desierto|deserto|praia|playa|ilha|isla|chapada|c[aâ]nion|canyon|serra|sierra|mirante|canastra/i;
 function stayScore(id){ if(STAY_SCORE[id]) return STAY_SCORE[id]; const n=(S[id]&&S[id][0])||''; return STAY_WORDS.test(n)?[0.8, tr('why_nature')]:[0.3,'']; }
 function capFor(sc){ return sc>=2?3: sc>=1?2: sc>=0.5?1:0; }
 function distributeDays(b, ext){
