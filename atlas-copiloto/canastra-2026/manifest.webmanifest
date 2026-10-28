@@ -9,7 +9,7 @@
  "lang": "pt-BR",
  "description": "Copiloto da Expedição Canastra 2026",
  "icons": [
-  {"src": "../assets/v1/icon-192-fresh.png", "sizes": "192x192", "type": "image/png"},
-  {"src": "../assets/v1/icon-512-fresh.png", "sizes": "512x512", "type": "image/png"}
+  {"src": "../../assets/v1/icon-192-fresh.png", "sizes": "192x192", "type": "image/png"},
+  {"src": "../../assets/v1/icon-512-fresh.png", "sizes": "512x512", "type": "image/png"}
  ]
 }
