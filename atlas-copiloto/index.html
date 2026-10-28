@@ -1491,6 +1491,13 @@ Object.assign(I18N.es,{"sub": "{a} al {b}", "sub2": "{a} al {b}", "days_high": "
 Object.assign(I18N.it,{"sub": "dal {a} al {b}", "sub2": "dal {a} al {b}", "days_high": "giorni sopra i 1.300 m", "days_dirt": "giorni su sterrato o off-road", "nights_ata": "notti in campeggio", "warn_meu": "<b>Il tuo itinerario:</b> {n} giorni e {a} notti in campeggio. Km e ore segnati come stimati sono stati ricalcolati dalle tue modifiche.", "reset22": "Ripristina itinerario originale", "h_clima": "Clima del periodo", "lead_clima": "Medie storiche di fine ottobre, non previsioni. La previsione live appare in ogni giorno.", "lead_dormir": "Pernottamenti con le alternative di ogni notte. Prezzi stimati.", "g_desc_ph": "Es.: campeggio a Vale da Gurita", "src_m": "media del periodo dai siti meteo", "src_e": "stima regionale per fine ottobre"});
 Object.assign(I18N.de,{"sub": "{a} bis {b}", "sub2": "{a} bis {b}", "days_high": "Tage über 1.300 m", "days_dirt": "Tage auf Piste oder Offroad", "nights_ata": "Nächte im Camp", "warn_meu": "<b>Deine Route:</b> {n} Tage und {a} Nächte im Camp. Als geschätzt markierte km und Stunden wurden nach deinen Änderungen neu berechnet.", "reset22": "Originalroute wiederherstellen", "h_clima": "Klima der Saison", "lead_clima": "Historische Mittelwerte für Ende Oktober, keine Vorhersage. Die Live-Vorhersage steht bei jedem Tag.", "lead_dormir": "Übernachtungen mit den Alternativen für jede Nacht. Preise geschätzt.", "g_desc_ph": "Z. B. Camping im Vale da Gurita", "src_m": "Mittel des Zeitraums laut Wetterseiten", "src_e": "regionale Schätzung für Ende Oktober"});
 Object.assign(I18N.zh,{"sub": "{a} 至 {b}", "sub2": "{a} 至 {b}", "days_high": "天海拔超过 1300 米", "days_dirt": "天走土路或越野", "nights_ata": "晚露营", "warn_meu": "<b>你的路线：</b>{n} 天，{a} 晚露营。标为估算的里程和时间已根据你的修改重新计算。", "reset22": "恢复原始路线", "h_clima": "当季气候", "lead_clima": "10 月下旬的历史平均值，不是预报。实时预报显示在每一天。", "lead_dormir": "行程中的住宿及每晚的备选。价格为估算。", "g_desc_ph": "例如：Vale da Gurita 露营地", "src_m": "气象网站的同期平均", "src_e": "10 月下旬的区域估算"});
+/* atlas copiloto: chuva no trajeto */
+Object.assign(I18N.pt,{"m_route": "chuva no trajeto, 6h–18h · {a} de {n} modelos", "bars_mm": "chuva prevista no trajeto, mm a cada 2 h", "st_light": "Chuva"});
+Object.assign(I18N.en,{"m_route": "rain on the route, 6am–6pm · {a} of {n} models", "bars_mm": "forecast rain on the route, mm per 2 h", "st_light": "Rain"});
+Object.assign(I18N.es,{"m_route": "lluvia en la ruta, 6h–18h · {a} de {n} modelos", "bars_mm": "lluvia prevista en la ruta, mm cada 2 h", "st_light": "Lluvia"});
+Object.assign(I18N.it,{"m_route": "pioggia sul percorso, 6–18 · {a} su {n} modelli", "bars_mm": "pioggia prevista sul percorso, mm ogni 2 h", "st_light": "Pioggia"});
+Object.assign(I18N.de,{"m_route": "Regen auf der Route, 6–18 Uhr · {a} von {n} Modellen", "bars_mm": "erwarteter Regen auf der Route, mm pro 2 Std.", "st_light": "Regen"});
+Object.assign(I18N.zh,{"m_route": "沿途降雨，6–18 时 · {n} 个模型中 {a} 个", "bars_mm": "沿途预计降雨，每 2 小时毫米数", "st_light": "雨"});
 const LOCALES = {pt:'pt-BR',en:'en-GB',es:'es-AR',it:'it-IT',de:'de-DE',zh:'zh-CN'};
 const LANG_NAMES = {pt:'Português',en:'English',es:'Español',it:'Italiano',de:'Deutsch',zh:'中文'};
 
@@ -1989,6 +1996,40 @@ async function getFc(id, date){
     store.set(key,v); return {...v, old:false};
   }catch(e){ return cached?{...cached, old:true}:null; }
 }
+/* Chuva no trajeto: soma das horas de estrada (6h–18h), cada hora no ponto onde o veículo deve estar, mediana de 3 modelos */
+const RAIN_MODELS=['ecmwf_ifs025','gfs_seamless','icon_seamless'], RAIN_H0=6, RAIN_H1=18, RAIN_STEP=2;
+function routeHours(d){
+  const ids=[d.from,...d.route,d.to].filter((x,k,a)=>k===0||x!==a[k-1]);
+  const cum=[0]; for(let k=1;k<ids.length;k++) cum.push(cum[k-1]+hav(ids[k-1],ids[k]));
+  const tot=cum[cum.length-1], out=[];
+  for(let h=RAIN_H0;h<RAIN_H1;h++){
+    const x=tot*(h+0.5-RAIN_H0)/(RAIN_H1-RAIN_H0); let k=1; while(k<cum.length-1 && cum[k]<x) k++;
+    const a=S[ids[Math.max(0,k-1)]], b=S[ids[Math.min(k,ids.length-1)]], seg=(cum[k]||0)-(cum[k-1]||0), f=seg>0?(x-cum[k-1])/seg:0;
+    out.push([h, +(a[1]+(b[1]-a[1])*f).toFixed(3), +(a[2]+(b[2]-a[2])*f).toFixed(3)]);
+  }
+  return out;
+}
+function median(v){ const s=v.filter(x=>x!=null).sort((a,b)=>a-b); if(!s.length) return null; const m=s.length>>1; return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+function rrKey(d,date){ return 'rr1:'+date+':'+routeHours(d).map(p=>p[1].toFixed(2)+','+p[2].toFixed(2)).join(';'); }
+function rrCached(d,date){ return store.get(rrKey(d,date),null); }
+async function getRouteRain(d, date){
+  const key=rrKey(d,date), cached=store.get(key,null);
+  if(cached && Date.now()-cached.t < 3*36e5) return cached;
+  const pts=routeHours(d);
+  const u=`https://api.open-meteo.com/v1/forecast?latitude=${pts.map(p=>p[1]).join(',')}&longitude=${pts.map(p=>p[2]).join(',')}&hourly=precipitation&models=${RAIN_MODELS.join(',')}&timezone=America%2FSao_Paulo&start_date=${date}&end_date=${date}`;
+  try{ const r=await fetch(u); if(!r.ok) throw 0; let j=await r.json(); if(!Array.isArray(j)) j=[j];
+    const per=RAIN_MODELS.map(()=>0), have=RAIN_MODELS.map(()=>false), hourly=[];
+    pts.forEach(([h],k)=>{ const H=(j[k]||{}).hourly||{}, idx=(H.time||[]).indexOf(`${date}T${String(h).padStart(2,'0')}:00`);
+      const vals=RAIN_MODELS.map((m,q)=>{ const arr=H['precipitation_'+m]||(RAIN_MODELS.length===1?H.precipitation:null); const v=arr&&idx>=0?arr[idx]:null; if(v!=null){ per[q]+=v; have[q]=true; } return v; });
+      hourly.push(median(vals)); });
+    const n=have.filter(Boolean).length; if(!n) throw 0;
+    const r1=x=>Math.round(x*10)/10, mm=r1(hourly.reduce((a,b)=>a+(b||0),0)), peak=r1(Math.max(0,...hourly.map(x=>x||0)));
+    const bars=[]; for(let h=RAIN_H0;h<RAIN_H1;h+=RAIN_STEP) bars.push(r1(hourly.slice(h-RAIN_H0,h-RAIN_H0+RAIN_STEP).reduce((a,b)=>a+(b||0),0)));
+    const v={t:Date.now(), mm, peak, bars, n, agree:per.filter((s,q)=>have[q]&&s>=1).length, models:RAIN_MODELS.map((m,q)=>have[q]?r1(per[q]):null)};
+    store.set(key,v); return v;
+  }catch(e){ return cached||null; }
+}
+function rainStatus(mm,peak){ return (mm>=30||peak>=10)?'heavy' : mm>=2?'light' : mm>=0.2?'drizzle' : 'dry'; }
 async function loadForecasts(){
   const days=planDays(), now=new Date(); const t0=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
   for(let i=0;i<days.length;i++){
@@ -1997,6 +2038,7 @@ async function loadForecasts(){
     const el=document.querySelector(`[data-fc="${i}"]`); if(!el) continue;
     const date=iso(dt), out=[];
     for(const id of fcPoints(days[i])){ const f=await getFc(id,date); if(f) out.push([id,f]); }
+    await getRouteRain(days[i], date);
     if(!out.length) continue;
     const card=document.getElementById('d-'+(i+1)); if(card){ const wp=card.querySelector('.wpart'); if(wp) wp.outerHTML=weatherPart(days[i],i); const w2=dayWeather(days[i],i); const dot=card.querySelector('.tldot'); if(dot) dot.style.borderColor=statusColor(w2.status); const tp=card.querySelector('.dtemp'); if(tp&&w2.tmax!=null) tp.textContent=w2.tmax+'°'; }
     $('#wsum').innerHTML = weatherSummary();
@@ -3007,8 +3049,11 @@ function dayWeather(d,i){
   const ok=c=>c && (c[12]!=null || (mo>=5&&mo<=7));
   const c1=climFor(dest,dt), c2=climFor(hi,dt), cs=[c1,c2].filter(Boolean);
   const f=fcCached(dest, iso(dt));
+  const rr=rrCached(d, iso(dt));
+  if(f && rr){ const kind=wmoKind(f.code), status=kind==='snow'?'snow':rainStatus(rr.mm, rr.peak);
+    return {live:true, route:true, status, kind:status==='dry'&&kind==='rain'?'cloud':kind, tmax:f.max, tmin:f.min, rain:Math.round(100*rr.agree/rr.n), mm:rr.mm, peak:rr.peak, agree:rr.agree, n:rr.n, gust:f.g, cl:f.cl, bars:rr.bars}; }
   if(f){ const kind=wmoKind(f.code), mm=f.mm||0, p=f.p||0;
-    const status = kind==='snow'?'snow' : (mm>=5||p>=70)?'heavy' : (mm>=1||p>=40)?'light' : (mm>=0.2||p>=20)?'drizzle':'dry';
+    const status = kind==='snow'?'snow' : mm>=30?'heavy' : mm>=2?'light' : (mm>=0.2||p>=40)?'drizzle':'dry';
     return {live:true, status, kind, tmax:f.max, tmin:f.min, rain:p, mm, gust:f.g, cl:f.cl, hp:f.hp||null}; }
   if(!cs.length) return {status:'na', kind:'cloud'};
   const c=c1||c2, rain=Math.max(...cs.map(x=>x[4])), gust=Math.max(...cs.map(x=>x[10]||0)), tmin=Math.min(...cs.map(x=>x[3])), snow=cs.some(x=>climCond(x).kind==='snow');
@@ -3017,14 +3062,16 @@ function dayWeather(d,i){
 }
 function weatherPart(d,i){
   const w=dayWeather(d,i), pts=[d.from,...d.route,d.to].filter((x,k,a)=>k===0||x!==a[k-1]);
-  const bars = w.hp && w.hp.length
+  const bars = w.bars
+    ? (()=>{ const mx=Math.max(...w.bars); return `<div class="bars5" aria-label="${tr('bars_mm')}">${w.bars.map((v,k)=>`<div class="b" title="${nf.format(v)} mm"><i style="height:${Math.max(4,Math.min(100,v/Math.max(10,mx)*100))}%" class="${v===mx&&v>=1?'hot st-'+w.status:''}"></i><span>${RAIN_H0+k*RAIN_STEP}h</span></div>`).join('')}</div><p class="blab">${tr('bars_mm')}</p>`; })()
+    : w.hp && w.hp.length
     ? `<div class="bars5" aria-label="${tr('bars_rain')}">${w.hp.map((v,k)=>`<div class="b"><i style="height:${Math.max(6,v)}%" class="${v===Math.max(...w.hp)&&v>=20?'hot st-'+w.status:''}"></i><span>${[6,9,12,15,18][k]}h</span></div>`).join('')}</div><p class="blab">${tr('bars_rain')}</p>`
     : (pts.length>1?(()=>{ const P=pts.slice(0,6), top=Math.max(1000,...P.map(id=>S[id][3]));
         return `<div class="altbars" aria-label="${tr('bars_alt')}">${P.map(id=>`<div class="ab"><span class="av">${nf.format(S[id][3])} m</span><i style="height:${Math.max(8,Math.round(S[id][3]/top*100))}%" class="${S[id][3]>=3500?'hi':''}"></i><span class="an">${esc(placeName(id))}</span></div>`).join('')}</div><p class="blab">${tr('bars_alt')}</p>`; })():'');
   if(w.status==='na') return `<div class="wpart"><div class="metrics"><div class="mt"><span class="wbig">${wIcon('cloud',34)}</span></div><div class="mt"><b class="mv">${nf.format(d.km)}</b><span>km</span></div></div>${bars}</div>`;
   return `<div class="wpart"><div class="metrics">
       <div class="mt"><span class="wbig">${wIcon(w.kind,36)}${(w.gust||0)>=50?wIcon('wind',22):''}</span><span>${tr('sky_'+w.kind)}</span></div>
-      <div class="mt"><b class="mv st-${w.status}">${w.live&&w.mm!=null?nf.format(w.mm)+'<small>mm</small>':w.rain+'<small>%</small>'}</b><span>${w.live&&w.mm!=null?tr('m_mm',{p:w.rain}):tr('m_rain')}</span></div>
+      <div class="mt"><b class="mv st-${w.status}">${w.live&&w.mm!=null?nf.format(w.mm)+'<small>mm</small>':w.rain+'<small>%</small>'}</b><span>${w.route?tr('m_route',{a:w.agree,n:w.n}):w.live&&w.mm!=null?tr('m_mm',{p:w.rain}):tr('m_rain')}</span></div>
       <div class="mt"><b class="mv">${w.tmin}°<small>/${w.tmax}°</small></b><span>${tr('m_temp')}</span></div>
       <div class="mt"><b class="mv ${(w.gust||0)>=50?'st-light':''}">${w.gust||0}<small>km/h</small></b><span>${tr('m_gust')}</span></div>
     </div><div class="wrow"><span class="badge st-${w.status}">${tr('st_'+w.status)}</span><span class="small">${w.live?tr('m_live'):tr('m_hist')}, ${tr('clouds_s',{c:w.cl!=null?w.cl:'–'})}</span></div>${bars}</div>`;
