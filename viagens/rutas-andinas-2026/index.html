@@ -315,7 +315,28 @@ h1 span{display:block;color:#eaaa80}
   ];
   if(window.L){
     var map=L.map("map",{scrollWheelZoom:false,zoomControl:true}).setView([-24,-57],4);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:17,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
+    // OpenStreetMap como padrao; Esri carregado somente sob demanda ou falha do OSM.
+    var osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+      maxZoom:19,
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+    var esri=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",{
+      maxZoom:19,
+      attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OSM'
+    });
+    osm.addTo(map);
+    L.control.layers({"OpenStreetMap":osm,"Esri":esri},null,{position:"topright"}).addTo(map);
+
+    // Mesmo fallback da pagina principal: 3 erros antes do primeiro tile OSM.
+    var osmOk=0,osmErr=0;
+    osm.on("tileload",function(){osmOk++;});
+    osm.on("tileerror",function(){
+      osmErr++;
+      if(osmOk===0 && osmErr>=3 && map.hasLayer(osm)){
+        map.removeLayer(osm);
+        esri.addTo(map);
+      }
+    });
     var line=stops.map(function(s){return [s.lat,s.lon]});
     L.polyline(line,{color:"#bc7657",weight:2.5,opacity:.7,dashArray:"5,9"}).addTo(map);
     stops.forEach(function(s,i){
