@@ -405,27 +405,30 @@ h1 span{display:block;color:#eaaa80}
   ];
   if(window.L){
     var map=L.map("map",{scrollWheelZoom:false,zoomControl:true,preferCanvas:true});
-    var carto=L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
-      subdomains:"abcd",maxZoom:19,
-      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    // CARTO passou a exigir API key em 2026 e envia "API KEY REQUIRED"
+    // como imagem (HTTP 200), impedindo a detecção por tileerror.
+    // OpenStreetMap padrão é a camada principal, sem chave de API.
+    var osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+      maxZoom:19,
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     });
     var esri=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",{
       maxZoom:19,
       attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OSM'
     });
-    // Troca o provedor mesmo em caso de falha parcial (um único tile carregado
-    // não é suficiente para garantir a integridade do mapa).
+    // Se a camada principal falhar, alterna para Esri; o usuário
+    // também pode selecionar manualmente o provedor no controle.
     var tileErrors=0,switched=false;
-    carto.on("tileerror",function(){
+    osm.on("tileerror",function(){
       tileErrors++;
-      if(tileErrors>=2 && !switched && map.hasLayer(carto)){
+      if(tileErrors>=2 && !switched && map.hasLayer(osm)){
         switched=true;
-        map.removeLayer(carto);
+        map.removeLayer(osm);
         esri.addTo(map);
       }
     });
-    carto.addTo(map);
-    L.control.layers({"CARTO / OpenStreetMap":carto,"Esri":esri},null,{position:"topright"}).addTo(map);
+    osm.addTo(map);
+    L.control.layers({"OpenStreetMap":osm,"Esri":esri},null,{position:"topright"}).addTo(map);
     var pathBeforeUyuni=stops.slice(0,11).map(function(s){return [s.lat,s.lon]});
     var pathAfterUyuni=stops.slice(11).map(function(s){return [s.lat,s.lon]});
     L.polyline(pathBeforeUyuni,{color:"#bc7657",weight:2.5,opacity:.75,dashArray:"5,9"}).addTo(map);
